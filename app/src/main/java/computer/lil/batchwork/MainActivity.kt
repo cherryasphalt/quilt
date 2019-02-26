@@ -11,14 +11,18 @@ import com.goterl.lazycode.lazysodium.utils.Key
 import computer.lil.batchwork.database.SSBDatabase
 import computer.lil.batchwork.handshake.SSBClientHandshake
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import moe.codeest.rxsocketclient.RxSocketClient
 import moe.codeest.rxsocketclient.SocketSubscriber
 import moe.codeest.rxsocketclient.meta.SocketConfig
 import moe.codeest.rxsocketclient.meta.ThreadStrategy
+import org.reactivestreams.Subscription
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
+    var ref: Disposable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,7 +46,7 @@ class MainActivity : AppCompatActivity() {
                 .setTimeout(30 * 1000)
                 .build())
 
-        val ref = client.connect()
+        ref = client.connect()
             .observeOn(AndroidSchedulers.mainThread())
             .doOnError {
                 it.printStackTrace()
@@ -63,7 +67,7 @@ class MainActivity : AppCompatActivity() {
                             clientHandshake.state = SSBClientHandshake.State.STEP3
                         }
                         SSBClientHandshake.State.STEP3 -> {
-                            Log.d("finished", data.toString())
+                            Log.d("finished", lazySodium.toHexStr(data))
                         }
                     }
                 }
@@ -77,5 +81,10 @@ class MainActivity : AppCompatActivity() {
                     client.sendData(clientHandshake.createHello())
                 }
             })
+    }
+
+    override fun onStop() {
+        ref?.dispose()
+        super.onStop()
     }
 }
