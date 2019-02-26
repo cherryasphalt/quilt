@@ -60,9 +60,9 @@ class SSBServerHandshake(val serverLongTermKeyPair: KeyPair) {
     }
 
     fun validateClientAuthentication(data: ByteArray): Boolean {
-        val dataPlainText = ByteArray(96)
+        val dataPlainText = ByteArray(112)
         val zeroNonce = ByteArray(SecretBox.NONCEBYTES)
-        val preKey = byteArrayOf(*networkId, *sharedSecretab?.asBytes!!, *sharedSecretaB?.asBytes!!)
+        val preKey = byteArrayOf(*networkId, *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes)
         val hashKey = ByteArray(Hash.SHA256_BYTES)
         lazySodium.cryptoHashSha256(hashKey, preKey, preKey.getLongSize())
 
@@ -87,19 +87,20 @@ class SSBServerHandshake(val serverLongTermKeyPair: KeyPair) {
     }
 
     fun createAccept(): ByteArray {
-        val detachedSignatureB = ByteArray(1024)
+        val detachedSignature = ByteArray(1024)
         val sigLength = LongArray(1)
         val hashab = ByteArray(Hash.SHA256_BYTES)
         lazySodium.cryptoHashSha256(hashab, sharedSecretab?.asBytes, sharedSecretab?.asBytes!!.getLongSize())
         val message = byteArrayOf(*networkId, *detachedSignatureA!!, *clientLongTermKey!!, *hashab)
-        lazySodium.cryptoSignDetached(detachedSignatureB, sigLength, message, message.getLongSize(), serverLongTermKeyPair.secretKey.asBytes)
+        lazySodium.cryptoSignDetached(detachedSignature, sigLength, message, message.getLongSize(), serverLongTermKeyPair.secretKey.asBytes)
+        val detachedSignatureB = detachedSignature.sliceArray(0..(sigLength[0].toInt() - 1))
 
         val zeroNonce = ByteArray(SecretBox.NONCEBYTES)
         val preKey = byteArrayOf(*networkId, *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes, *sharedSecretAb!!.asBytes)
         val key = ByteArray(Hash.SHA256_BYTES)
         lazySodium.cryptoHashSha256(key, preKey, preKey.getLongSize())
 
-        val payload = ByteArray(SecretBox.MACBYTES)
+        val payload = ByteArray(SecretBox.MACBYTES + detachedSignatureB.size)
         lazySodium.cryptoSecretBoxEasy(payload, detachedSignatureB, detachedSignatureB.getLongSize(), zeroNonce, key)
         return payload
     }

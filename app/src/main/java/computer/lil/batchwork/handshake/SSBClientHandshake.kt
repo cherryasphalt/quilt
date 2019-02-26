@@ -13,7 +13,7 @@ import java.util.*
 
 class SSBClientHandshake(val clientLongTermKeyPair: KeyPair, val serverLongTermKey: ByteArray) {
     enum class State {
-        STEP1, STEP2
+        STEP1, STEP2, STEP3
     }
 
     var state = State.STEP1
@@ -82,7 +82,8 @@ class SSBClientHandshake(val clientLongTermKeyPair: KeyPair, val serverLongTermK
 
         val finalMessage = byteArrayOf(*detachedSignatureA!!, *clientLongTermKeyPair.publicKey.asBytes)
         val zeroNonce = ByteArray(SecretBox.NONCEBYTES)
-        val payload = ByteArray(1024)
+        val payload = ByteArray(112)
+        //val payload = ByteArray(finalMessage.size - SecretBox.MACBYTES)
         val boxKey = ByteArray(Hash.SHA256_BYTES)
         val preKey = byteArrayOf(*networkId, *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes)
 
@@ -102,8 +103,8 @@ class SSBClientHandshake(val clientLongTermKeyPair: KeyPair, val serverLongTermK
 
         val messageSize = networkId.size + (detachedSignatureA?.size ?: 0) + clientLongTermKeyPair.publicKey.asBytes.size + hashab.size
         val expectedMessage = byteArrayOf(*networkId, *detachedSignatureA!!, *clientLongTermKeyPair.publicKey.asBytes, *hashab)
+        val detachedSignatureB = ByteArray(messageSize - SecretBox.MACBYTES)
 
-        val detachedSignatureB = ByteArray(messageSize)
         return lazySodium.cryptoSecretBoxOpenEasy(detachedSignatureB, data, data.getLongSize(), zeroNonce, responseKey)
                 && lazySodium.cryptoSignVerifyDetached(detachedSignatureB, expectedMessage, expectedMessage.getLongSize(), serverLongTermKey)
     }

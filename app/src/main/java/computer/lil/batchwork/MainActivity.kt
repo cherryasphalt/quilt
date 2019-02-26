@@ -29,8 +29,7 @@ class MainActivity : AppCompatActivity() {
             SSBDatabase::class.java, "ssb-database"
         ).build()
 
-        val sodium = SodiumAndroid()
-        val lazySodium = LazySodiumAndroid(sodium, StandardCharsets.UTF_8)
+        val lazySodium = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
         val longTermKeyPair = lazySodium.cryptoSignSeedKeypair(SecureRandom().generateSeed(Sign.SEEDBYTES))
         val clientHandshake = SSBClientHandshake(longTermKeyPair, Key.fromHexString("676acdbbda229c2f4bcd83dc69a3a31042c4ee92266d09cabb699b0b3066b0de").asBytes)
 
@@ -61,6 +60,10 @@ class MainActivity : AppCompatActivity() {
                         SSBClientHandshake.State.STEP2 -> {
                             val success = clientHandshake.validateServerAcceptResponse(data)
                             Log.d("authentication", success.toString())
+                            clientHandshake.state = SSBClientHandshake.State.STEP3
+                        }
+                        SSBClientHandshake.State.STEP3 -> {
+                            Log.d("finished", data.toString())
                         }
                     }
                 }

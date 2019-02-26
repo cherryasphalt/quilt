@@ -22,7 +22,6 @@ import java.security.SecureRandom
 class ScuttlebuttInstrumentedTest {
     @Test
     fun useAppContext() {
-        // Context of the app under test.
         val appContext = InstrumentationRegistry.getTargetContext()
         assertEquals("computer.lil.batchwork", appContext.packageName)
     }
