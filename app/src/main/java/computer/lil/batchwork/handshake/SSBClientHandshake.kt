@@ -1,6 +1,5 @@
 package computer.lil.batchwork.handshake
 
-import android.util.Log
 import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.interfaces.Auth
@@ -67,43 +66,16 @@ class SSBClientHandshake(val longTermKeyPair: KeyPair, val serverLongTermKey: By
         return false
     }
 
-    fun validateServerAcceptResponse(response: ByteArray): Boolean {
-        val zeroNonce = ByteArray(SecretBox.NONCEBYTES)
-        val responseKey = ByteArray(Hash.SHA256_BYTES)
-        val prekey = ByteBuffer.allocate(networkId.size + Sign.CURVE25519_SECRETKEYBYTES + Sign.CURVE25519_SECRETKEYBYTES)
-            .put(networkId)
-            .put(sharedSecretab?.asBytes)
-            .put(sharedSecretaB?.asBytes)
-            .put(sharedSecretAb?.asBytes)
-            .array()
-        lazySodium.cryptoHashSha256(responseKey, prekey, prekey.getLongSize())
-
-        val hashab = ByteArray(Hash.SHA256_BYTES)
-        val messageSize = networkId.size + (detachedSignatureA?.size ?: 0) + longTermKeyPair.publicKey.asBytes.size + hashab.size
-
-        val expectedMessage = ByteBuffer.allocate(messageSize)
-            .put(networkId)
-            .put(detachedSignatureA)
-            .put(longTermKeyPair.publicKey.asBytes)
-            .put(hashab)
-            .array()
-
-        val detachedSignatureB = ByteArray(messageSize)
-        return lazySodium.cryptoSecretBoxOpenEasy(detachedSignatureB, response, response.getLongSize(), zeroNonce, responseKey)
-                && lazySodium.cryptoSignVerifyDetached(detachedSignatureB, expectedMessage, expectedMessage.getLongSize(), serverLongTermKey)
-    }
-
     private fun computeSharedKeys() {
         val curve25519ServerKey = ByteArray(Sign.CURVE25519_PUBLICKEYBYTES)
         lazySodium.convertPublicKeyEd25519ToCurve25519(curve25519ServerKey, serverLongTermKey)
 
-        val curve25519ClientPublicKey = ByteArray(Sign.CURVE25519_PUBLICKEYBYTES)
-        lazySodium.convertPublicKeyEd25519ToCurve25519(curve25519ClientPublicKey, longTermKeyPair.publicKey.asBytes)
+        val curve25519ClientSecretKey = ByteArray(Sign.CURVE25519_SECRETKEYBYTES)
+        lazySodium.convertSecretKeyEd25519ToCurve25519(curve25519ClientSecretKey, longTermKeyPair.secretKey.asBytes)
 
         sharedSecretab = lazySodium.cryptoScalarMult(clientEphemeralKeyPair.secretKey, Key.fromBytes(serverEphemeralKey))
         sharedSecretaB = lazySodium.cryptoScalarMult(clientEphemeralKeyPair.secretKey, Key.fromBytes(curve25519ServerKey))
-        Log.d("server key converted", Key.fromBytes(curve25519ServerKey).asHexString)
-        sharedSecretAb = lazySodium.cryptoScalarMult(Key.fromBytes(curve25519ClientPublicKey), Key.fromBytes(serverEphemeralKey))
+        sharedSecretAb = lazySodium.cryptoScalarMult(Key.fromBytes(curve25519ClientSecretKey), Key.fromBytes(serverEphemeralKey))
     }
 
     fun createAuthenticateMessage(): ByteArray {
@@ -125,19 +97,6 @@ class SSBClientHandshake(val longTermKeyPair: KeyPair, val serverLongTermKey: By
             .put(detachedSignatureA)
             .put(longTermKeyPair.publicKey.asBytes)
             .array()
-
-        Log.d("sig length", finalMessage.size.toString())
-        Log.d("networkID", lazySodium.toHexStr(networkId))
-        Log.d("server short term key", lazySodium.toHexStr(serverEphemeralKey))
-        Log.d("server long term key", lazySodium.toHexStr(serverLongTermKey))
-        Log.d("sharedSecretab", lazySodium.toHexStr(sharedSecretab?.asBytes))
-        Log.d("sharedSecretaB", lazySodium.toHexStr(sharedSecretaB?.asBytes))
-        Log.d("sharedSecretAb", lazySodium.toHexStr(sharedSecretAb?.asBytes))
-        Log.d("sigA", lazySodium.toHexStr(detachedSignatureA))
-        Log.d("client long term", lazySodium.toHexStr(longTermKeyPair.publicKey.asBytes))
-        Log.d("shash", lazySodium.toHexStr(hash))
-        Log.d("verify", lazySodium.cryptoSignVerifyDetached(detachedSignatureA, message, message.getLongSize(), longTermKeyPair.publicKey.asBytes).toString())
-
         val zeroNonce = ByteArray(SecretBox.NONCEBYTES)
         val payload = ByteArray(1024)
         val boxKey = ByteArray(Hash.SHA256_BYTES)
@@ -151,5 +110,31 @@ class SSBClientHandshake(val longTermKeyPair: KeyPair, val serverLongTermKey: By
         lazySodium.cryptoSecretBoxEasy(payload, finalMessage, finalMessage.getLongSize(), zeroNonce, boxKey)
 
         return payload
+    }
+
+    fun validateServerAcceptResponse(data: ByteArray): Boolean {
+        val zeroNonce = ByteArray(SecretBox.NONCEBYTES)
+        val responseKey = ByteArray(Hash.SHA256_BYTES)
+        val prekey = ByteBuffer.allocate(networkId.size + Sign.CURVE25519_SECRETKEYBYTES + Sign.CURVE25519_SECRETKEYBYTES + Sign.CURVE25519_SECRETKEYBYTES)
+            .put(networkId)
+            .put(sharedSecretab?.asBytes)
+            .put(sharedSecretaB?.asBytes)
+            .put(sharedSecretAb?.asBytes)
+            .array()
+        lazySodium.cryptoHashSha256(responseKey, prekey, prekey.getLongSize())
+        val hashab = ByteArray(Hash.SHA256_BYTES)
+        lazySodium.cryptoHashSha256(hashab, sharedSecretab?.asBytes, sharedSecretab?.asBytes?.size!!.toLong())
+
+        val messageSize = networkId.size + (detachedSignatureA?.size ?: 0) + longTermKeyPair.publicKey.asBytes.size + hashab.size
+        val expectedMessage = ByteBuffer.allocate(messageSize)
+            .put(networkId)
+            .put(detachedSignatureA)
+            .put(longTermKeyPair.publicKey.asBytes)
+            .put(hashab)
+            .array()
+
+        val detachedSignatureB = ByteArray(messageSize)
+        return lazySodium.cryptoSecretBoxOpenEasy(detachedSignatureB, data, data.getLongSize(), zeroNonce, responseKey)
+                && lazySodium.cryptoSignVerifyDetached(detachedSignatureB, expectedMessage, expectedMessage.getLongSize(), serverLongTermKey)
     }
 }
