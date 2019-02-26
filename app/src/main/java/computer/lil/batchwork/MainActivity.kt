@@ -6,10 +6,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.room.Room
 import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid
+import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.interfaces.Sign
 import com.goterl.lazycode.lazysodium.utils.Key
 import computer.lil.batchwork.database.SSBDatabase
 import computer.lil.batchwork.handshake.SSBClientHandshake
+import computer.lil.batchwork.network.BoxStream
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import moe.codeest.rxsocketclient.RxSocketClient
@@ -36,6 +38,7 @@ class MainActivity : AppCompatActivity() {
         val lazySodium = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
         val longTermKeyPair = lazySodium.cryptoSignSeedKeypair(SecureRandom().generateSeed(Sign.SEEDBYTES))
         val clientHandshake = SSBClientHandshake(longTermKeyPair, Key.fromHexString("676acdbbda229c2f4bcd83dc69a3a31042c4ee92266d09cabb699b0b3066b0de").asBytes)
+        var boxStream: BoxStream? = null
 
         val client = RxSocketClient.create(
             SocketConfig.Builder()
@@ -64,10 +67,16 @@ class MainActivity : AppCompatActivity() {
                         SSBClientHandshake.State.STEP2 -> {
                             val success = clientHandshake.validateServerAcceptResponse(data)
                             Log.d("authentication", success.toString())
+                            boxStream = BoxStream(
+                                Key.fromBytes(clientHandshake.serverLongTermKey),
+                                clientHandshake.clientLongTermKeyPair.publicKey,
+                                clientHandshake.serverEphemeralKey!!.sliceArray(0 until SecretBox.NONCEBYTES),
+                                clientHandshake.clientEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)
+                            )
                             clientHandshake.state = SSBClientHandshake.State.STEP3
                         }
                         SSBClientHandshake.State.STEP3 -> {
-                            Log.d("finished", lazySodium.toHexStr(data))
+                            Log.d("finished", lazySodium.toHexStr(boxStream?.readFromClient(data)))
                         }
                     }
                 }

@@ -51,6 +51,8 @@ class BoxStream(val clientToServerKey: Key, val serverToClientKey: Key, val clie
     }
 
     fun decryptMessage(encryptedMessage: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray {
+        if (encryptedMessage.size < HEADER_SIZE)
+            throw Exception()
         val messages: MutableList<Byte> = mutableListOf()
         var currentIndex = 0
 
@@ -70,16 +72,19 @@ class BoxStream(val clientToServerKey: Key, val serverToClientKey: Key, val clie
 
         val encryptedHeader = encryptedSegment.sliceArray(0 until HEADER_SIZE)
         val header = ByteArray(HEADER_SIZE - SecretBox.MACBYTES)
-        ls.cryptoSecretBoxOpenEasy(header, encryptedHeader, encryptedHeader.size.toLong(), headerNonce, key)
 
-        val messageLength = ByteBuffer.wrap(header.sliceArray(0 until 2)).int
-        val bodyTag = header.sliceArray(2 until header.size)
+        if (ls.cryptoSecretBoxOpenEasy(header, encryptedHeader, encryptedHeader.size.toLong(), headerNonce, key)) {
+            val messageLength = ByteBuffer.wrap(header.sliceArray(0 until 2)).short.toInt()
+            val bodyTag = header.sliceArray(2 until header.size)
 
-        val encryptedBody = byteArrayOf(*bodyTag, *encryptedSegment.sliceArray(HEADER_SIZE until HEADER_SIZE + messageLength))
-        val decryptedBody = ByteArray(messageLength)
-        ls.cryptoSecretBoxOpenEasy(decryptedBody, encryptedBody, encryptedBody.size.toLong(), bodyNonce, key)
+            val encryptedBody =
+                byteArrayOf(*bodyTag, *encryptedSegment.sliceArray(HEADER_SIZE until HEADER_SIZE + messageLength))
+            val decryptedBody = ByteArray(messageLength)
+            ls.cryptoSecretBoxOpenEasy(decryptedBody, encryptedBody, encryptedBody.size.toLong(), bodyNonce, key)
 
-        return decryptedBody
+            return decryptedBody
+        }
+        throw Exception()
     }
 
     fun encryptMessage(message: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray {
@@ -106,7 +111,7 @@ class BoxStream(val clientToServerKey: Key, val serverToClientKey: Key, val clie
         ls.cryptoSecretBoxEasy(encryptedBody, messageSegment, messageSegment.size.toLong(), bodyNonce, key)
 
         val headerValue = byteArrayOf(
-            *ByteBuffer.allocate(2).order(ByteOrder.BIG_ENDIAN).putInt(encryptedBody.size - SecretBox.MACBYTES).array(),
+            *ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt(encryptedBody.size - SecretBox.MACBYTES).array().sliceArray(2 until 4),
             *encryptedBody.sliceArray(0 until SecretBox.MACBYTES)
         )
 
