@@ -42,6 +42,8 @@ class ScuttlebuttInstrumentedTest {
             serverEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)
         )
 
+        Assert.assertEquals(ls.toHexStr(boxStreamClient.clientToServerNonce), ls.toHexStr(serverEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)))
+
         val message = "hello"
         val message2 = "world"
         val receivedMessage = boxStreamServer.readFromServer(boxStreamClient.sendToServer(message.toByteArray()))
@@ -56,5 +58,7 @@ class ScuttlebuttInstrumentedTest {
         Assert.assertEquals(message2, receivedMessage2.toString(Charsets.UTF_8))
         Assert.assertEquals(message3, receivedMessage3.toString(Charsets.UTF_8))
         Assert.assertEquals(message4, receivedMessage4.toString(Charsets.UTF_8))
+
+        Assert.assertNotEquals(ls.toHexStr(boxStreamClient.clientToServerNonce), ls.toHexStr(serverEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)))
     }
 }
