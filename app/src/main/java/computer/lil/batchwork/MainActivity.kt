@@ -9,9 +9,12 @@ import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.interfaces.Sign
 import com.goterl.lazycode.lazysodium.utils.Key
+import com.squareup.moshi.JsonAdapter
 import computer.lil.batchwork.database.SSBDatabase
 import computer.lil.batchwork.handshake.SSBClientHandshake
 import computer.lil.batchwork.network.BoxStream
+import computer.lil.batchwork.network.RPCProtocol
+import computer.lil.batchwork.network.SSBClient
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import moe.codeest.rxsocketclient.RxSocketClient
@@ -22,6 +25,9 @@ import org.reactivestreams.Subscription
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import java.util.*
+import com.squareup.moshi.Moshi
+
+
 
 class MainActivity : AppCompatActivity() {
     var ref: Disposable? = null
@@ -37,13 +43,13 @@ class MainActivity : AppCompatActivity() {
 
         val lazySodium = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
         val longTermKeyPair = lazySodium.cryptoSignSeedKeypair(SecureRandom().generateSeed(Sign.SEEDBYTES))
-        val clientHandshake = SSBClientHandshake(longTermKeyPair, Key.fromHexString("676acdbbda229c2f4bcd83dc69a3a31042c4ee92266d09cabb699b0b3066b0de").asBytes)
+        val clientHandshake = SSBClientHandshake(longTermKeyPair, Key.fromHexString("ce04e1237865ae95560084807649f0833da5f0aa13d6fe95eafddb759675d633").asBytes)
         var boxStream: BoxStream? = null
 
         val client = RxSocketClient.create(
             SocketConfig.Builder()
                 .setIp("10.0.2.2")
-                .setPort(8888)
+                .setPort(8007)
                 .setCharset(Charsets.UTF_8)
                 .setThreadStrategy(ThreadStrategy.ASYNC)
                 .setTimeout(30 * 1000)
@@ -51,12 +57,9 @@ class MainActivity : AppCompatActivity() {
 
         ref = client.connect()
             .observeOn(AndroidSchedulers.mainThread())
-            .doOnError {
-                it.printStackTrace()
-            }
             .subscribe(object: SocketSubscriber() {
                 override fun onResponse(data: ByteArray) {
-                    Log.d("hello", "response")
+                    Log.d("response", data.toString())
                     when (clientHandshake.state) {
                         SSBClientHandshake.State.STEP1 -> {
                             if (clientHandshake.validateHelloResponse(data)) {
@@ -76,7 +79,25 @@ class MainActivity : AppCompatActivity() {
                             clientHandshake.state = SSBClientHandshake.State.STEP3
                         }
                         SSBClientHandshake.State.STEP3 -> {
-                            Log.d("finished", lazySodium.toHexStr(boxStream?.readFromClient(data)))
+                            val protocol = RPCProtocol()
+                            /*boxStream?.run {
+                                Log.d("finished", lazySodium.toHexStr(this.readFromServer(protocol.decode(data).body)))
+                            }*/
+
+                            val moshi = Moshi.Builder().build()
+                            val adapter: JsonAdapter<SSBClient.Request> = moshi.adapter(SSBClient.Request::class.java)
+                            val request = adapter.toJson(
+                                SSBClient.Request(listOf("createHistoryStream"),
+                                    SSBClient.RequestType.SOURCE,
+                                    mapOf(
+                                        "id" to "",
+                                        "limit" to 1
+                                    )
+                                )
+                            )
+                            boxStream?.run {
+                                client.sendData(sendToServer (protocol.encode(request.toByteArray())))
+                            }
                         }
                     }
                 }

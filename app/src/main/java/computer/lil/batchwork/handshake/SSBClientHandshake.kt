@@ -20,7 +20,7 @@ class SSBClientHandshake(val clientLongTermKeyPair: KeyPair, val serverLongTermK
     val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
 
     val clientEphemeralKeyPair = ls.cryptoKxKeypair()
-    val networkId = Key.fromHexString("d4a1cb88a66f02f8db635ce26441cc5dac1b08420ceaac230839b755845a9ffb").asBytes
+    val networkId = Key.fromHexString("5fb17ceeadd1589110a5c9a1d682ad2680e76d93c37e9cdbff7f22f8c829d032").asBytes
     var serverEphemeralKey: ByteArray? = null
     var sharedSecretab: Key? = null
     var sharedSecretaB: Key? = null
