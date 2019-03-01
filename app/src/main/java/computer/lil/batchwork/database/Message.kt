@@ -7,13 +7,6 @@ import androidx.room.ForeignKey.CASCADE
 import androidx.room.PrimaryKey
 import com.squareup.moshi.JsonClass
 
-@Entity(foreignKeys = arrayOf(ForeignKey(
-    entity = Peer::class,
-    parentColumns = arrayOf("id"),
-    childColumns = arrayOf("author"),
-    onDelete = CASCADE)
-))
-
 @JsonClass(generateAdapter = true)
 data class Message(
     @PrimaryKey var id: Int,

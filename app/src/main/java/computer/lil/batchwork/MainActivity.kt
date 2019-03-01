@@ -10,27 +10,25 @@ import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.interfaces.Sign
 import com.goterl.lazycode.lazysodium.utils.Key
 import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.Moshi
 import computer.lil.batchwork.database.SSBDatabase
+import computer.lil.batchwork.database.SSBDatabase.Companion.sRoomDatabaseCallback
 import computer.lil.batchwork.handshake.SSBClientHandshake
 import computer.lil.batchwork.network.BoxStream
 import computer.lil.batchwork.network.RPCProtocol
-import computer.lil.batchwork.network.SSBClient
+import computer.lil.batchwork.model.SSBClient
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import moe.codeest.rxsocketclient.RxSocketClient
 import moe.codeest.rxsocketclient.SocketSubscriber
 import moe.codeest.rxsocketclient.meta.SocketConfig
 import moe.codeest.rxsocketclient.meta.ThreadStrategy
-import org.reactivestreams.Subscription
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
-import java.util.*
-import com.squareup.moshi.Moshi
-
-
 
 class MainActivity : AppCompatActivity() {
     var ref: Disposable? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,7 +83,8 @@ class MainActivity : AppCompatActivity() {
                             }*/
 
                             val moshi = Moshi.Builder().build()
-                            val adapter: JsonAdapter<SSBClient.Request> = moshi.adapter(SSBClient.Request::class.java)
+                            val adapter: JsonAdapter<SSBClient.Request> = moshi.adapter(
+                                SSBClient.Request::class.java)
                             val request = adapter.toJson(
                                 SSBClient.Request(listOf("createHistoryStream"),
                                     SSBClient.RequestType.SOURCE,
