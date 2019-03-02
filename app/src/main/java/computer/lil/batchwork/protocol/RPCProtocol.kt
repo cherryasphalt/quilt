@@ -1,4 +1,4 @@
-package computer.lil.batchwork.network
+package computer.lil.batchwork.protocol
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder

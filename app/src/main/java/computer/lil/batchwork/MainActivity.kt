@@ -9,11 +9,12 @@ import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import computer.lil.batchwork.database.SSBDatabase
 import computer.lil.batchwork.identity.IdentityHandler
-import computer.lil.batchwork.network.SSBClientHandshake
-import computer.lil.batchwork.network.BoxStream
-import computer.lil.batchwork.network.RPCProtocol
+import computer.lil.batchwork.protocol.ClientHandshake
+import computer.lil.batchwork.protocol.BoxStream
+import computer.lil.batchwork.protocol.RPCProtocol
 import computer.lil.batchwork.model.SSBClient
 import computer.lil.batchwork.identity.AndroidKeyStoreIdentityHandler
+import computer.lil.batchwork.protocol.Handshake
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import moe.codeest.rxsocketclient.RxSocketClient
@@ -33,7 +34,7 @@ class MainActivity : AppCompatActivity() {
 
         val identityHandler: IdentityHandler = AndroidKeyStoreIdentityHandler(this)
         identityHandler.generateIdentityKeyPair()
-        val clientHandshake = SSBClientHandshake(
+        val clientHandshake = ClientHandshake(
             identityHandler,
             Key.fromHexString("676acdbbda229c2f4bcd83dc69a3a31042c4ee92266d09cabb699b0b3066b0de").asBytes
         )
@@ -54,24 +55,24 @@ class MainActivity : AppCompatActivity() {
                 override fun onResponse(data: ByteArray) {
                     Log.d("response", data.toString())
                     when (clientHandshake.state) {
-                        SSBClientHandshake.State.STEP1 -> {
+                        Handshake.State.PHASE1 -> {
                             if (clientHandshake.verifyHelloMessage(data)) {
                                 client.sendData(clientHandshake.createAuthenticateMessage())
-                                clientHandshake.state = SSBClientHandshake.State.STEP2
+                                clientHandshake.state = Handshake.State.PHASE2
                             }
                         }
-                        SSBClientHandshake.State.STEP2 -> {
+                        Handshake.State.PHASE2 -> {
                             val success = clientHandshake.validateServerAcceptResponse(data)
                             Log.d("authentication", success.toString())
-                            boxStream = BoxStream(
+                            /*boxStream = BoxStream(
                                 clientHandshake.remoteKey,
                                 identityHandler.getIdentityPublicKey(),
                                 clientHandshake.serverEphemeralKey!!.sliceArray(0 until SecretBox.NONCEBYTES),
                                 clientHandshake.localEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)
-                            )
-                            clientHandshake.state = SSBClientHandshake.State.STEP3
+                            )*/
+                            clientHandshake.state = Handshake.State.PHASE3
                         }
-                        SSBClientHandshake.State.STEP3 -> {
+                        Handshake.State.PHASE3 -> {
                             val protocol = RPCProtocol()
                             /*boxStream?.run {
                                 Log.d("finished", lazySodium.toHexStr(this.readFromServer(protocol.decode(data).body)))

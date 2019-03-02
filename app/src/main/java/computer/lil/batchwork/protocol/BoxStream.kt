@@ -1,4 +1,4 @@
-package computer.lil.batchwork.network
+package computer.lil.batchwork.protocol
 
 import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid
@@ -9,11 +9,21 @@ import java.nio.charset.StandardCharsets
 import kotlin.math.ceil
 import kotlin.math.min
 
-class BoxStream(val clientToServerKey: ByteArray, val serverToClientKey: ByteArray, val clientToServerNonce: ByteArray, val serverToClientNonce: ByteArray) {
+class BoxStream(val handshake: Handshake) {
     companion object {
         const val HEADER_SIZE = 34
         const val MAX_MESSAGE_SIZE = 4096
     }
+
+    init {
+        if (handshake.state != Handshake.State.COMPLETE)
+            throw ProtocolException("Handshake not complete.")
+    }
+
+    private val clientToServerKey = handshake.remoteKey
+    private val serverToClientKey = handshake.identityHandler.getIdentityPublicKey()
+    private val clientToServerNonce = handshake.remoteEphemeralKey!!.sliceArray(0 until SecretBox.NONCEBYTES)
+    private val serverToClientNonce = handshake.localEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)
 
     private val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
 
@@ -34,11 +44,11 @@ class BoxStream(val clientToServerKey: ByteArray, val serverToClientKey: ByteArr
     }
 
     fun readFromClient(message: ByteArray): ByteArray {
-        return decryptMessage(message, clientToServerKey, clientToServerNonce)
+        return decryptMessage(message, clientToServerKey!!, clientToServerNonce)
     }
 
     fun sendToServer(message: ByteArray): ByteArray {
-        return encryptMessage(message, clientToServerKey, clientToServerNonce)
+        return encryptMessage(message, clientToServerKey!!, clientToServerNonce)
     }
 
     fun readFromServer(message: ByteArray): ByteArray {

@@ -2,7 +2,7 @@ package computer.lil.batchwork
 
 import androidx.test.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
-import computer.lil.batchwork.network.RPCProtocol
+import computer.lil.batchwork.protocol.RPCProtocol
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith

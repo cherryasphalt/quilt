@@ -4,8 +4,8 @@ import androidx.test.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
 import computer.lil.batchwork.identity.AndroidKeyStoreIdentityHandler
 import computer.lil.batchwork.identity.BasicIdentityHandler
-import computer.lil.batchwork.network.SSBClientHandshake
-import computer.lil.batchwork.network.SSBServerHandshake
+import computer.lil.batchwork.protocol.ClientHandshake
+import computer.lil.batchwork.protocol.ServerHandshake
 import org.junit.Assert
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -30,8 +30,8 @@ class ScuttlebuttInstrumentedTest {
                 AndroidKeyStoreIdentityHandler(appContext)
         val serverIdentityHandler = BasicIdentityHandler.createWithGeneratedKeys()
 
-        val clientHandshake = SSBClientHandshake(clientIdentityHandler, serverIdentityHandler.getIdentityPublicKey())
-        val serverHandshake = SSBServerHandshake(serverIdentityHandler)
+        val clientHandshake = ClientHandshake(clientIdentityHandler, serverIdentityHandler.getIdentityPublicKey())
+        val serverHandshake = ServerHandshake(serverIdentityHandler)
 
         assertTrue(serverHandshake.verifyHelloMessage(clientHandshake.createHelloMessage()))
         assertTrue(clientHandshake.verifyHelloMessage(serverHandshake.createHelloMessage()))

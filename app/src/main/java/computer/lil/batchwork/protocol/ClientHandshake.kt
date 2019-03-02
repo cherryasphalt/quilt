@@ -1,31 +1,23 @@
-package computer.lil.batchwork.network
+package computer.lil.batchwork.protocol
 
-import com.goterl.lazycode.lazysodium.LazySodiumAndroid
-import com.goterl.lazycode.lazysodium.SodiumAndroid
-import com.goterl.lazycode.lazysodium.interfaces.Auth
 import com.goterl.lazycode.lazysodium.interfaces.Hash
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.interfaces.Sign
 import com.goterl.lazycode.lazysodium.utils.Key
 import computer.lil.batchwork.identity.IdentityHandler
-import java.nio.charset.StandardCharsets
-import java.util.*
 
-class SSBClientHandshake(identityHandler: IdentityHandler, val remoteKey: ByteArray): Handshake(identityHandler) {
-    enum class State {
-        STEP1, STEP2, STEP3
+class ClientHandshake(identityHandler: IdentityHandler, serverKey: ByteArray): Handshake(identityHandler) {
+    init {
+        remoteKey = serverKey
     }
 
-    var state = State.STEP1
-
-    var serverEphemeralKey: ByteArray? = null
     private var detachedSignatureA: ByteArray? = null
 
     fun createAuthenticateMessage(): ByteArray {
         val hash = ByteArray(Hash.SHA256_BYTES)
         ls.cryptoHashSha256(hash, sharedSecretab?.asBytes, sharedSecretab?.asBytes?.size!!.toLong())
 
-        val message = byteArrayOf(*networkId, *remoteKey, *hash)
+        val message = byteArrayOf(*networkId, *remoteKey!!, *hash)
         detachedSignatureA = identityHandler.signUsingIdentity(message)
 
         val finalMessage = byteArrayOf(*detachedSignatureA!!, *identityHandler.getIdentityPublicKey())
@@ -52,8 +44,12 @@ class SSBClientHandshake(identityHandler: IdentityHandler, val remoteKey: ByteAr
         val expectedMessage = byteArrayOf(*networkId, *detachedSignatureA!!, *identityHandler.getIdentityPublicKey(), *hashab)
         val detachedSignatureB = ByteArray(messageSize - SecretBox.MACBYTES)
 
-        return ls.cryptoSecretBoxOpenEasy(detachedSignatureB, data, data.getLongSize(), zeroNonce, responseKey)
-                && ls.cryptoSignVerifyDetached(detachedSignatureB, expectedMessage, expectedMessage.getLongSize(), remoteKey)
+        if (ls.cryptoSecretBoxOpenEasy(detachedSignatureB, data, data.getLongSize(), zeroNonce, responseKey)
+                && ls.cryptoSignVerifyDetached(detachedSignatureB, expectedMessage, expectedMessage.getLongSize(), remoteKey)) {
+            state = State.COMPLETE
+            return true
+        }
+        return false
     }
 
     override fun computeSharedKeys() {
