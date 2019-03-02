@@ -8,9 +8,10 @@ import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.interfaces.Sign
 import com.goterl.lazycode.lazysodium.utils.Key
 import com.goterl.lazycode.lazysodium.utils.KeyPair
+import computer.lil.batchwork.identity.IdentityHandler
 import java.nio.charset.StandardCharsets
 
-class SSBServerHandshake(val serverLongTermKeyPair: KeyPair) {
+class SSBServerHandshake(val identityHandler: IdentityHandler) {
     enum class State {
         STEP1, STEP2
     }
@@ -51,11 +52,8 @@ class SSBServerHandshake(val serverLongTermKeyPair: KeyPair) {
     }
 
     private fun computeSharedKeys() {
-        val curve25519ServerSecretKey = ByteArray(Sign.CURVE25519_SECRETKEYBYTES)
-        ls.convertSecretKeyEd25519ToCurve25519(curve25519ServerSecretKey, serverLongTermKeyPair.secretKey.asBytes)
-
         sharedSecretab = ls.cryptoScalarMult(serverEphemeralKeyPair.secretKey, Key.fromBytes(clientEphemeralKey))
-        sharedSecretaB = ls.cryptoScalarMult(Key.fromBytes(curve25519ServerSecretKey), Key.fromBytes(clientEphemeralKey))
+        sharedSecretaB = Key.fromBytes(identityHandler.keyExchangeUsingIdentitySecret(clientEphemeralKey!!))
     }
 
     fun validateClientAuthentication(data: ByteArray): Boolean {
@@ -70,7 +68,7 @@ class SSBServerHandshake(val serverLongTermKeyPair: KeyPair) {
         val clientLongTermPublicKey = dataPlainText.sliceArray(64..95)
         val hashab = ByteArray(Hash.SHA256_BYTES)
         ls.cryptoHashSha256(hashab, sharedSecretab?.asBytes, sharedSecretab?.asBytes!!.getLongSize())
-        val expectedMessage = byteArrayOf(*networkId, *serverLongTermKeyPair.publicKey.asBytes, *hashab)
+        val expectedMessage = byteArrayOf(*networkId, *identityHandler.getIdentityPublicKey(), *hashab)
         if (ls.cryptoSignVerifyDetached(detachedSignatureA, expectedMessage, expectedMessage.getLongSize(), clientLongTermPublicKey)) {
             this.clientLongTermKey = clientLongTermPublicKey
             this.detachedSignatureA = detachedSignatureA
@@ -84,13 +82,10 @@ class SSBServerHandshake(val serverLongTermKeyPair: KeyPair) {
     }
 
     fun createAccept(): ByteArray {
-        val detachedSignature = ByteArray(1024)
-        val sigLength = LongArray(1)
         val hashab = ByteArray(Hash.SHA256_BYTES)
         ls.cryptoHashSha256(hashab, sharedSecretab?.asBytes, sharedSecretab?.asBytes!!.getLongSize())
         val message = byteArrayOf(*networkId, *detachedSignatureA!!, *clientLongTermKey!!, *hashab)
-        ls.cryptoSignDetached(detachedSignature, sigLength, message, message.getLongSize(), serverLongTermKeyPair.secretKey.asBytes)
-        val detachedSignatureB = detachedSignature.sliceArray(0..(sigLength[0].toInt() - 1))
+        val detachedSignatureB = identityHandler.signUsingIdentity(message)
 
         val zeroNonce = ByteArray(SecretBox.NONCEBYTES)
         val preKey = byteArrayOf(*networkId, *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes, *sharedSecretAb!!.asBytes)
