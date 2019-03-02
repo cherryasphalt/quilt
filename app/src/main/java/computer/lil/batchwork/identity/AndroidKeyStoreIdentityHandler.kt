@@ -23,7 +23,7 @@ import com.goterl.lazycode.lazysodium.utils.Key
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.GCMParameterSpec
 
-class AndroidKeyStoreIdentityHandler(val context: Context): IdentityHandler {
+class AndroidKeyStoreIdentityHandler(private val context: Context): IdentityHandler {
     companion object {
         private const val SHARED_PREF_NAME = BuildConfig.APPLICATION_ID + ".PREFERENCE"
 
@@ -37,6 +37,20 @@ class AndroidKeyStoreIdentityHandler(val context: Context): IdentityHandler {
         private const val AES_MODE = "AES/GCM/NoPadding"
 
         private val FIXED_IV = ByteArray(12)
+
+        fun createWithGeneratedKeys(context: Context): AndroidKeyStoreIdentityHandler {
+            val handler = AndroidKeyStoreIdentityHandler(context)
+            if (handler.generateIdentityKeyPair())
+                return handler
+            throw IdentityHandler.IdentityException("Failed generating keys.")
+        }
+
+        fun checkIdentityKeyPairExists(context: Context): Boolean {
+            val pref= context.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE)
+            return pref.contains(PREF_IDENTITY_PUBLIC_KEY) && pref.contains(
+                PREF_IDENTITY_ENCRYPTED_PRIVATE_KEY
+            )
+        }
     }
 
     private val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
@@ -102,13 +116,6 @@ class AndroidKeyStoreIdentityHandler(val context: Context): IdentityHandler {
         val curve25519ClientSecretKey = ByteArray(Sign.CURVE25519_SECRETKEYBYTES)
         ls.convertSecretKeyEd25519ToCurve25519(curve25519ClientSecretKey, decryptPrivateKey())
         return ls.cryptoScalarMult(Key.fromBytes(curve25519ClientSecretKey), Key.fromBytes(exchangePublicKey)).asBytes
-    }
-
-    fun checkIdentityKeyPairExists(context: Context): Boolean {
-        val pref= context.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE)
-        return pref.contains(PREF_IDENTITY_PUBLIC_KEY) && pref.contains(
-            PREF_IDENTITY_ENCRYPTED_PRIVATE_KEY
-        )
     }
 
     private fun decryptPrivateKey(): ByteArray {

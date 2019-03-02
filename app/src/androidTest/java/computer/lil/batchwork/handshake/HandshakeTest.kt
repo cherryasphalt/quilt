@@ -27,11 +27,13 @@ class ScuttlebuttInstrumentedTest {
 
     @Test
     fun testHandshake() {
-        val clientIdentityHandler = AndroidKeyStoreIdentityHandler(InstrumentationRegistry.getTargetContext())
-        clientIdentityHandler.generateIdentityKeyPair()
-
-        val serverIdentityHandler = BasicIdentityHandler()
-        serverIdentityHandler.generateIdentityKeyPair()
+        val appContext = InstrumentationRegistry.getTargetContext()
+        val clientIdentityHandler =
+            if (!AndroidKeyStoreIdentityHandler.checkIdentityKeyPairExists(appContext))
+                AndroidKeyStoreIdentityHandler.createWithGeneratedKeys(appContext)
+            else
+                AndroidKeyStoreIdentityHandler(appContext)
+        val serverIdentityHandler = BasicIdentityHandler.createWithGeneratedKeys()
 
         val clientHandshake = SSBClientHandshake(clientIdentityHandler, serverIdentityHandler.getIdentityPublicKey())
         val serverHandshake = SSBServerHandshake(serverIdentityHandler)

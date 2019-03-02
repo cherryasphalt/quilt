@@ -13,6 +13,13 @@ import java.security.SecureRandom
 class BasicIdentityHandler: IdentityHandler {
     companion object {
         const val KEY_ALGO = "ed25519"
+
+        fun createWithGeneratedKeys(): BasicIdentityHandler {
+            val handler = BasicIdentityHandler()
+            if (handler.generateIdentityKeyPair())
+                return handler
+            throw IdentityHandler.IdentityException("Failed generating keys.")
+        }
     }
     private val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
     private var keyPair: KeyPair? = null

@@ -35,14 +35,14 @@ class MainActivity : AppCompatActivity() {
         identityHandler.generateIdentityKeyPair()
         val clientHandshake = SSBClientHandshake(
             identityHandler,
-            Key.fromHexString("ce04e1237865ae95560084807649f0833da5f0aa13d6fe95eafddb759675d633").asBytes
+            Key.fromHexString("676acdbbda229c2f4bcd83dc69a3a31042c4ee92266d09cabb699b0b3066b0de").asBytes
         )
         var boxStream: BoxStream? = null
 
         val client = RxSocketClient.create(
             SocketConfig.Builder()
                 .setIp("10.0.2.2")
-                .setPort(8007)
+                .setPort(8008)
                 .setCharset(Charsets.UTF_8)
                 .setThreadStrategy(ThreadStrategy.ASYNC)
                 .setTimeout(30 * 1000)
