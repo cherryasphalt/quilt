@@ -1,4 +1,4 @@
-package computer.lil.batchwork.handshake
+package computer.lil.batchwork.network
 
 import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid
@@ -7,17 +7,17 @@ import com.goterl.lazycode.lazysodium.interfaces.Hash
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.interfaces.Sign
 import com.goterl.lazycode.lazysodium.utils.Key
-import com.goterl.lazycode.lazysodium.utils.KeyPair
+import computer.lil.batchwork.identity.IdentityHandler
 import java.nio.charset.StandardCharsets
 import java.util.*
 
-class SSBClientHandshake(val clientLongTermKeyPair: KeyPair, val serverLongTermKey: ByteArray) {
+class SSBClientHandshake(private val identityHandler: IdentityHandler, val serverLongTermKey: ByteArray) {
     enum class State {
         STEP1, STEP2, STEP3
     }
 
     var state = State.STEP1
-    val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
+    private val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
 
     val clientEphemeralKeyPair = ls.cryptoKxKeypair()
     val networkId = Key.fromHexString("5fb17ceeadd1589110a5c9a1d682ad2680e76d93c37e9cdbff7f22f8c829d032").asBytes
@@ -25,7 +25,7 @@ class SSBClientHandshake(val clientLongTermKeyPair: KeyPair, val serverLongTermK
     var sharedSecretab: Key? = null
     var sharedSecretaB: Key? = null
     var sharedSecretAb: Key? = null
-    var detachedSignatureA: ByteArray? = null
+    private var detachedSignatureA: ByteArray? = null
 
     private fun ByteArray.getLongSize(): Long { return this.size.toLong() }
 
@@ -61,12 +61,9 @@ class SSBClientHandshake(val clientLongTermKeyPair: KeyPair, val serverLongTermK
         val curve25519ServerKey = ByteArray(Sign.CURVE25519_PUBLICKEYBYTES)
         ls.convertPublicKeyEd25519ToCurve25519(curve25519ServerKey, serverLongTermKey)
 
-        val curve25519ClientSecretKey = ByteArray(Sign.CURVE25519_SECRETKEYBYTES)
-        ls.convertSecretKeyEd25519ToCurve25519(curve25519ClientSecretKey, clientLongTermKeyPair.secretKey.asBytes)
-
         sharedSecretab = ls.cryptoScalarMult(clientEphemeralKeyPair.secretKey, Key.fromBytes(serverEphemeralKey))
         sharedSecretaB = ls.cryptoScalarMult(clientEphemeralKeyPair.secretKey, Key.fromBytes(curve25519ServerKey))
-        sharedSecretAb = ls.cryptoScalarMult(Key.fromBytes(curve25519ClientSecretKey), Key.fromBytes(serverEphemeralKey))
+        sharedSecretAb = Key.fromBytes(identityHandler.keyExchangeUsingIdentitySecret(serverEphemeralKey!!))
     }
 
     fun createAuthenticateMessage(): ByteArray {
@@ -74,12 +71,9 @@ class SSBClientHandshake(val clientLongTermKeyPair: KeyPair, val serverLongTermK
         ls.cryptoHashSha256(hash, sharedSecretab?.asBytes, sharedSecretab?.asBytes?.size!!.toLong())
 
         val message = byteArrayOf(*networkId, *serverLongTermKey, *hash)
-        val detachedSignature = ByteArray(Sign.BYTES)
-        val sigLength = LongArray(1)
-        ls.cryptoSignDetached(detachedSignature, sigLength, message, message.getLongSize(), clientLongTermKeyPair.secretKey.asBytes)
-        detachedSignatureA = detachedSignature.sliceArray(0 until sigLength[0].toInt())
+        detachedSignatureA = identityHandler.signUsingIdentity(message)
 
-        val finalMessage = byteArrayOf(*detachedSignatureA!!, *clientLongTermKeyPair.publicKey.asBytes)
+        val finalMessage = byteArrayOf(*detachedSignatureA!!, *identityHandler.getIdentityPublicKey())
         val zeroNonce = ByteArray(SecretBox.NONCEBYTES)
         val payload = ByteArray(112)
         val boxKey = ByteArray(Hash.SHA256_BYTES)
@@ -99,8 +93,8 @@ class SSBClientHandshake(val clientLongTermKeyPair: KeyPair, val serverLongTermK
         val hashab = ByteArray(Hash.SHA256_BYTES)
         ls.cryptoHashSha256(hashab, sharedSecretab?.asBytes, sharedSecretab?.asBytes?.size!!.toLong())
 
-        val messageSize = networkId.size + (detachedSignatureA?.size ?: 0) + clientLongTermKeyPair.publicKey.asBytes.size + hashab.size
-        val expectedMessage = byteArrayOf(*networkId, *detachedSignatureA!!, *clientLongTermKeyPair.publicKey.asBytes, *hashab)
+        val messageSize = networkId.size + (detachedSignatureA?.size ?: 0) + identityHandler.getIdentityPublicKey().size + hashab.size
+        val expectedMessage = byteArrayOf(*networkId, *detachedSignatureA!!, *identityHandler.getIdentityPublicKey(), *hashab)
         val detachedSignatureB = ByteArray(messageSize - SecretBox.MACBYTES)
 
         return ls.cryptoSecretBoxOpenEasy(detachedSignatureB, data, data.getLongSize(), zeroNonce, responseKey)

@@ -1,4 +1,4 @@
-package computer.lil.batchwork.handshake
+package computer.lil.batchwork.network
 
 import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid
@@ -19,7 +19,7 @@ class SSBServerHandshake(val serverLongTermKeyPair: KeyPair) {
     val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
 
     val serverEphemeralKeyPair: KeyPair = ls.cryptoKxKeypair()
-    val networkId: ByteArray = Key.fromHexString("d4a1cb88a66f02f8db635ce26441cc5dac1b08420ceaac230839b755845a9ffb").asBytes
+    val networkId: ByteArray = Key.fromHexString("5fb17ceeadd1589110a5c9a1d682ad2680e76d93c37e9cdbff7f22f8c829d032").asBytes
     var clientEphemeralKey: ByteArray? = null
     var sharedSecretab: Key? = null
     var sharedSecretaB: Key? = null
@@ -38,7 +38,7 @@ class SSBServerHandshake(val serverLongTermKeyPair: KeyPair) {
 
         if (ls.cryptoAuthVerify(mac, clientEphemeralKey, clientEphemeralKey.getLongSize(), networkId)) {
             this.clientEphemeralKey = clientEphemeralKey
-            computeSecrets()
+            computeSharedKeys()
             return true
         }
         return false
@@ -50,7 +50,7 @@ class SSBServerHandshake(val serverLongTermKeyPair: KeyPair) {
         return byteArrayOf(*helloMessage, *serverEphemeralKeyPair.publicKey.asBytes)
     }
 
-    fun computeSecrets() {
+    private fun computeSharedKeys() {
         val curve25519ServerSecretKey = ByteArray(Sign.CURVE25519_SECRETKEYBYTES)
         ls.convertSecretKeyEd25519ToCurve25519(curve25519ServerSecretKey, serverLongTermKeyPair.secretKey.asBytes)
 
@@ -59,14 +59,12 @@ class SSBServerHandshake(val serverLongTermKeyPair: KeyPair) {
     }
 
     fun validateClientAuthentication(data: ByteArray): Boolean {
-        val dataPlainText = ByteArray(112)
+        val dataPlainText = ByteArray(96)
         val zeroNonce = ByteArray(SecretBox.NONCEBYTES)
         val preKey = byteArrayOf(*networkId, *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes)
         val hashKey = ByteArray(Hash.SHA256_BYTES)
         ls.cryptoHashSha256(hashKey, preKey, preKey.getLongSize())
-
-        if(!ls.cryptoSecretBoxOpenEasy(dataPlainText, data, data.getLongSize(), zeroNonce, hashKey))
-            return false
+        ls.cryptoSecretBoxOpenEasy(dataPlainText, data, data.getLongSize(), zeroNonce, hashKey)
 
         val detachedSignatureA = dataPlainText.sliceArray(0..63)
         val clientLongTermPublicKey = dataPlainText.sliceArray(64..95)

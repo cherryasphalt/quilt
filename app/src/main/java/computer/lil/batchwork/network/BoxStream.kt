@@ -3,14 +3,13 @@ package computer.lil.batchwork.network
 import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
-import com.goterl.lazycode.lazysodium.utils.Key
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.StandardCharsets
 import kotlin.math.ceil
 import kotlin.math.min
 
-class BoxStream(val clientToServerKey: Key, val serverToClientKey: Key, val clientToServerNonce: ByteArray, val serverToClientNonce: ByteArray) {
+class BoxStream(val clientToServerKey: ByteArray, val serverToClientKey: ByteArray, val clientToServerNonce: ByteArray, val serverToClientNonce: ByteArray) {
     companion object {
         const val HEADER_SIZE = 34
         const val MAX_MESSAGE_SIZE = 4096
@@ -31,19 +30,19 @@ class BoxStream(val clientToServerKey: Key, val serverToClientKey: Key, val clie
     }
 
     fun sendToClient(message: ByteArray): ByteArray {
-        return encryptMessage(message, serverToClientKey.asBytes, serverToClientNonce)
+        return encryptMessage(message, serverToClientKey, serverToClientNonce)
     }
 
     fun readFromClient(message: ByteArray): ByteArray {
-        return decryptMessage(message, clientToServerKey.asBytes, clientToServerNonce)
+        return decryptMessage(message, clientToServerKey, clientToServerNonce)
     }
 
     fun sendToServer(message: ByteArray): ByteArray {
-        return encryptMessage(message, clientToServerKey.asBytes, clientToServerNonce)
+        return encryptMessage(message, clientToServerKey, clientToServerNonce)
     }
 
     fun readFromServer(message: ByteArray): ByteArray {
-        return decryptMessage(message, serverToClientKey.asBytes, serverToClientNonce)
+        return decryptMessage(message, serverToClientKey, serverToClientNonce)
     }
 
     fun createGoodbye(key: ByteArray, nonce: ByteArray): ByteArray {

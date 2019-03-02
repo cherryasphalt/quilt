@@ -3,28 +3,23 @@ package computer.lil.batchwork
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import androidx.room.Room
-import com.goterl.lazycode.lazysodium.LazySodiumAndroid
-import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
-import com.goterl.lazycode.lazysodium.interfaces.Sign
 import com.goterl.lazycode.lazysodium.utils.Key
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import computer.lil.batchwork.database.SSBDatabase
-import computer.lil.batchwork.database.SSBDatabase.Companion.sRoomDatabaseCallback
-import computer.lil.batchwork.handshake.SSBClientHandshake
+import computer.lil.batchwork.identity.IdentityHandler
+import computer.lil.batchwork.network.SSBClientHandshake
 import computer.lil.batchwork.network.BoxStream
 import computer.lil.batchwork.network.RPCProtocol
 import computer.lil.batchwork.model.SSBClient
+import computer.lil.batchwork.identity.AndroidKeyStoreIdentityHandler
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import moe.codeest.rxsocketclient.RxSocketClient
 import moe.codeest.rxsocketclient.SocketSubscriber
 import moe.codeest.rxsocketclient.meta.SocketConfig
 import moe.codeest.rxsocketclient.meta.ThreadStrategy
-import java.nio.charset.StandardCharsets
-import java.security.SecureRandom
 
 class MainActivity : AppCompatActivity() {
     var ref: Disposable? = null
@@ -34,14 +29,14 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val db = Room.databaseBuilder(
-            applicationContext,
-            SSBDatabase::class.java, "ssb-database"
-        ).build()
+        val db = SSBDatabase.getInstance(this)
 
-        val lazySodium = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
-        val longTermKeyPair = lazySodium.cryptoSignSeedKeypair(SecureRandom().generateSeed(Sign.SEEDBYTES))
-        val clientHandshake = SSBClientHandshake(longTermKeyPair, Key.fromHexString("ce04e1237865ae95560084807649f0833da5f0aa13d6fe95eafddb759675d633").asBytes)
+        val identityHandler: IdentityHandler = AndroidKeyStoreIdentityHandler(this)
+        identityHandler.generateIdentityKeyPair()
+        val clientHandshake = SSBClientHandshake(
+            identityHandler,
+            Key.fromHexString("ce04e1237865ae95560084807649f0833da5f0aa13d6fe95eafddb759675d633").asBytes
+        )
         var boxStream: BoxStream? = null
 
         val client = RxSocketClient.create(
@@ -69,8 +64,8 @@ class MainActivity : AppCompatActivity() {
                             val success = clientHandshake.validateServerAcceptResponse(data)
                             Log.d("authentication", success.toString())
                             boxStream = BoxStream(
-                                Key.fromBytes(clientHandshake.serverLongTermKey),
-                                clientHandshake.clientLongTermKeyPair.publicKey,
+                                clientHandshake.serverLongTermKey,
+                                identityHandler.getIdentityPublicKey(),
                                 clientHandshake.serverEphemeralKey!!.sliceArray(0 until SecretBox.NONCEBYTES),
                                 clientHandshake.clientEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)
                             )
@@ -94,6 +89,7 @@ class MainActivity : AppCompatActivity() {
                                     )
                                 )
                             )
+                            Log.d("request object", request)
                             boxStream?.run {
                                 client.sendData(sendToServer (protocol.encode(request.toByteArray())))
                             }

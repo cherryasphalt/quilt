@@ -1,11 +1,13 @@
 package computer.lil.batchwork.handshake
 
-import android.util.Log
 import androidx.test.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
 import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.interfaces.Sign
+import computer.lil.batchwork.identity.AndroidKeyStoreIdentityHandler
+import computer.lil.batchwork.network.SSBClientHandshake
+import computer.lil.batchwork.network.SSBServerHandshake
 import org.junit.Assert
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -25,10 +27,11 @@ class ScuttlebuttInstrumentedTest {
     @Test
     fun testHandshake() {
         val lazySodium = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
-        val clientLongTermKey = lazySodium.cryptoSignSeedKeypair(SecureRandom().generateSeed(Sign.SEEDBYTES))
         val serverLongTermKey = lazySodium.cryptoSignSeedKeypair(SecureRandom().generateSeed(Sign.SEEDBYTES))
 
-        val clientHandshake = SSBClientHandshake(clientLongTermKey, serverLongTermKey.publicKey.asBytes)
+        val identityHandler = AndroidKeyStoreIdentityHandler(InstrumentationRegistry.getTargetContext())
+        identityHandler.generateIdentityKeyPair()
+        val clientHandshake = SSBClientHandshake(identityHandler, serverLongTermKey.publicKey.asBytes)
         val serverHandshake = SSBServerHandshake(serverLongTermKey)
 
         assertTrue(serverHandshake.validateHello(clientHandshake.createHello()))

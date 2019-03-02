@@ -20,7 +20,7 @@ abstract class SSBDatabase: RoomDatabase() {
         .addCallback(object : RoomDatabase.Callback() {
             override fun onOpen(db: SupportSQLiteDatabase) {
                 super.onOpen(db)
-                PopulateDbAsync(Companion.getInstance(it)).execute()
+                PopulateDbAsync(it).execute()
             }
         })
         .build()
@@ -28,19 +28,21 @@ abstract class SSBDatabase: RoomDatabase() {
 
     abstract fun messageDao(): MessageDao
 
-    private class PopulateDbAsync internal constructor(db: SSBDatabase) : AsyncTask<Void, Void, Void>() {
+    private class PopulateDbAsync internal constructor(context: Context) : AsyncTask<Void, Void, Void>() {
         private val mDao: MessageDao
+        private val helloMessage: Message
+
         init {
-            mDao = db.messageDao()
+            mDao = Companion.getInstance(context).messageDao()
+            helloMessage = SSBClient.createMessage(
+                context,
+                mapOf("type" to "post", "text" to "hello")
+            )
         }
 
         override fun doInBackground(vararg params: Void): Void? {
             //mDao.deleteAll()
-            /*val messageHello = SSBClient.createMessage(
-                mapOf()
-            )
-            val messageWorld = Message("World")
-            mDao.insertAll(messageHello, messageWorld)*/
+            mDao.insertAll(helloMessage, helloMessage)
             return null
         }
     }
