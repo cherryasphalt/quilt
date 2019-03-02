@@ -6,6 +6,7 @@ import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.interfaces.Sign
+import computer.lil.batchwork.identity.BasicIdentityHandler
 import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,22 +23,23 @@ class ScuttlebuttInstrumentedTest {
 
     @Test
     fun testBoxStream() {
-        /*val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
-        val clientLongTermKey = ls.cryptoSignSeedKeypair(SecureRandom().generateSeed(Sign.SEEDBYTES))
-        val serverLongTermKey = ls.cryptoSignSeedKeypair(SecureRandom().generateSeed(Sign.SEEDBYTES))
+        val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
+
+        val clientIdentity = BasicIdentityHandler.createWithGeneratedKeys()
+        val serverIdentity = BasicIdentityHandler.createWithGeneratedKeys()
         val clientEphemeralKeyPair = ls.cryptoKxKeypair()
         val localEphemeralKeyPair = ls.cryptoKxKeypair()
 
         val boxStreamClient = BoxStream(
-            serverLongTermKey.publicKey,
-            clientLongTermKey.publicKey,
+            serverIdentity.getIdentityPublicKey(),
+            clientIdentity.getIdentityPublicKey(),
             localEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES),
             clientEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)
         )
 
         val boxStreamServer = BoxStream(
-            clientLongTermKey.publicKey,
-            serverLongTermKey.publicKey,
+            clientIdentity.getIdentityPublicKey(),
+            serverIdentity.getIdentityPublicKey(),
             clientEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES),
             localEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)
         )
@@ -60,6 +62,5 @@ class ScuttlebuttInstrumentedTest {
         Assert.assertEquals(message4, receivedMessage4.toString(Charsets.UTF_8))
 
         Assert.assertNotEquals(ls.toHexStr(boxStreamClient.clientToServerNonce), ls.toHexStr(localEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)))
-    */
     }
 }
