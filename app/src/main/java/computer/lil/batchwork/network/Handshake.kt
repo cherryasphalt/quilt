@@ -9,14 +9,17 @@ import computer.lil.batchwork.identity.IdentityHandler
 import java.nio.charset.StandardCharsets
 import java.util.*
 
-abstract class Handshake(val identityHandler: IdentityHandler, val remoteKey: ByteArray) {
-    private val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
+abstract class Handshake(val identityHandler: IdentityHandler) {
+    protected val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
 
     val networkId = Key.fromHexString("d4a1cb88a66f02f8db635ce26441cc5dac1b08420ceaac230839b755845a9ffb").asBytes
     val localEphemeralKeyPair: KeyPair = ls.cryptoKxKeypair()
     var remoteEphemeralKey: ByteArray? = null
+    protected var sharedSecretab: Key? = null
+    protected var sharedSecretaB: Key? = null
+    protected var sharedSecretAb: Key? = null
 
-    private fun ByteArray.getLongSize(): Long { return this.size.toLong() }
+    protected fun ByteArray.getLongSize(): Long { return this.size.toLong() }
 
     private fun createHmac(key: ByteArray, text: ByteArray): ByteArray {
         val hmac = ByteArray(Auth.BYTES)
@@ -25,12 +28,12 @@ abstract class Handshake(val identityHandler: IdentityHandler, val remoteKey: By
         return hmac
     }
 
-    fun createHello(): ByteArray {
+    fun createHelloMessage(): ByteArray {
         val hmacMessage = createHmac(networkId, localEphemeralKeyPair.publicKey.asBytes)
         return byteArrayOf(*hmacMessage, *localEphemeralKeyPair.publicKey.asBytes)
     }
 
-    fun validateHelloResponse(data: ByteArray): Boolean {
+    fun verifyHelloMessage(data: ByteArray): Boolean {
         if (data.size != 64)
             return false
 
@@ -40,9 +43,11 @@ abstract class Handshake(val identityHandler: IdentityHandler, val remoteKey: By
 
         if (Arrays.equals(mac, expectedMac)) {
             this.remoteEphemeralKey = remoteEphemeralKey
-            //computeSharedKeys()
+            computeSharedKeys()
             return true
         }
         return false
     }
+
+    protected abstract fun computeSharedKeys()
 }

@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
                     Log.d("response", data.toString())
                     when (clientHandshake.state) {
                         SSBClientHandshake.State.STEP1 -> {
-                            if (clientHandshake.validateHelloResponse(data)) {
+                            if (clientHandshake.verifyHelloMessage(data)) {
                                 client.sendData(clientHandshake.createAuthenticateMessage())
                                 clientHandshake.state = SSBClientHandshake.State.STEP2
                             }
@@ -64,10 +64,10 @@ class MainActivity : AppCompatActivity() {
                             val success = clientHandshake.validateServerAcceptResponse(data)
                             Log.d("authentication", success.toString())
                             boxStream = BoxStream(
-                                clientHandshake.serverLongTermKey,
+                                clientHandshake.remoteKey,
                                 identityHandler.getIdentityPublicKey(),
                                 clientHandshake.serverEphemeralKey!!.sliceArray(0 until SecretBox.NONCEBYTES),
-                                clientHandshake.clientEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)
+                                clientHandshake.localEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)
                             )
                             clientHandshake.state = SSBClientHandshake.State.STEP3
                         }
@@ -103,7 +103,7 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onConnected() {
                     Log.d("hello", "connected")
-                    client.sendData(clientHandshake.createHello())
+                    client.sendData(clientHandshake.createHelloMessage())
                 }
             })
     }

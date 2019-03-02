@@ -26,12 +26,12 @@ class ScuttlebuttInstrumentedTest {
         val clientLongTermKey = ls.cryptoSignSeedKeypair(SecureRandom().generateSeed(Sign.SEEDBYTES))
         val serverLongTermKey = ls.cryptoSignSeedKeypair(SecureRandom().generateSeed(Sign.SEEDBYTES))
         val clientEphemeralKeyPair = ls.cryptoKxKeypair()
-        val serverEphemeralKeyPair = ls.cryptoKxKeypair()
+        val localEphemeralKeyPair = ls.cryptoKxKeypair()
 
         val boxStreamClient = BoxStream(
             serverLongTermKey.publicKey,
             clientLongTermKey.publicKey,
-            serverEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES),
+            localEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES),
             clientEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)
         )
 
@@ -39,10 +39,10 @@ class ScuttlebuttInstrumentedTest {
             clientLongTermKey.publicKey,
             serverLongTermKey.publicKey,
             clientEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES),
-            serverEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)
+            localEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)
         )
 
-        Assert.assertEquals(ls.toHexStr(boxStreamClient.clientToServerNonce), ls.toHexStr(serverEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)))
+        Assert.assertEquals(ls.toHexStr(boxStreamClient.clientToServerNonce), ls.toHexStr(localEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)))
 
         val message = "hello"
         val message2 = "world"
@@ -59,7 +59,7 @@ class ScuttlebuttInstrumentedTest {
         Assert.assertEquals(message3, receivedMessage3.toString(Charsets.UTF_8))
         Assert.assertEquals(message4, receivedMessage4.toString(Charsets.UTF_8))
 
-        Assert.assertNotEquals(ls.toHexStr(boxStreamClient.clientToServerNonce), ls.toHexStr(serverEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)))
+        Assert.assertNotEquals(ls.toHexStr(boxStreamClient.clientToServerNonce), ls.toHexStr(localEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)))
     */
     }
 }
