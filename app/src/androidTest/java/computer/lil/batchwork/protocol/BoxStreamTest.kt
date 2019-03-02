@@ -28,8 +28,8 @@ class ScuttlebuttInstrumentedTest {
         Assert.assertTrue(serverHandshake.verifyClientAuthentication(clientHandshake.createAuthenticateMessage()))
         Assert.assertTrue(clientHandshake.validateServerAcceptResponse(serverHandshake.createAcceptMessage()))
 
-        val boxStreamClient = BoxStream(clientHandshake)
-        val boxStreamServer = BoxStream(serverHandshake)
+        val boxStreamClient = clientHandshake.createBoxStream()
+        val boxStreamServer = serverHandshake.createBoxStream()
 
         val message = "hello"
         val message2 = "world"

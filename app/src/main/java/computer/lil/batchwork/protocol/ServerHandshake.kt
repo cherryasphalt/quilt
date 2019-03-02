@@ -53,7 +53,7 @@ class ServerHandshake(identityHandler: IdentityHandler): Handshake(identityHandl
         val payload = ByteArray(SecretBox.MACBYTES + detachedSignatureB.size)
         ls.cryptoSecretBoxEasy(payload, detachedSignatureB, detachedSignatureB.getLongSize(), zeroNonce, key)
 
-        state = State.COMPLETE
+        completed = true
         return payload
     }
 }

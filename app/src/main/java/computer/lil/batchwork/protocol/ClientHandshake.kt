@@ -44,12 +44,9 @@ class ClientHandshake(identityHandler: IdentityHandler, serverKey: ByteArray): H
         val expectedMessage = byteArrayOf(*networkId, *detachedSignatureA!!, *identityHandler.getIdentityPublicKey(), *hashab)
         val detachedSignatureB = ByteArray(messageSize - SecretBox.MACBYTES)
 
-        if (ls.cryptoSecretBoxOpenEasy(detachedSignatureB, data, data.getLongSize(), zeroNonce, responseKey)
-                && ls.cryptoSignVerifyDetached(detachedSignatureB, expectedMessage, expectedMessage.getLongSize(), remoteKey)) {
-            state = State.COMPLETE
-            return true
-        }
-        return false
+        completed = ls.cryptoSecretBoxOpenEasy(detachedSignatureB, data, data.getLongSize(), zeroNonce, responseKey)
+                && ls.cryptoSignVerifyDetached(detachedSignatureB, expectedMessage, expectedMessage.getLongSize(), remoteKey)
+        return completed
     }
 
     override fun computeSharedKeys() {

@@ -3,6 +3,8 @@ package computer.lil.batchwork
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import com.goterl.lazycode.lazysodium.LazySodiumAndroid
+import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.utils.Key
 import com.squareup.moshi.JsonAdapter
@@ -21,10 +23,11 @@ import moe.codeest.rxsocketclient.RxSocketClient
 import moe.codeest.rxsocketclient.SocketSubscriber
 import moe.codeest.rxsocketclient.meta.SocketConfig
 import moe.codeest.rxsocketclient.meta.ThreadStrategy
+import java.nio.charset.StandardCharsets
 
 class MainActivity : AppCompatActivity() {
     var ref: Disposable? = null
-
+    private val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,19 +67,14 @@ class MainActivity : AppCompatActivity() {
                         Handshake.State.PHASE2 -> {
                             val success = clientHandshake.validateServerAcceptResponse(data)
                             Log.d("authentication", success.toString())
-                            /*boxStream = BoxStream(
-                                clientHandshake.remoteKey,
-                                identityHandler.getIdentityPublicKey(),
-                                clientHandshake.serverEphemeralKey!!.sliceArray(0 until SecretBox.NONCEBYTES),
-                                clientHandshake.localEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)
-                            )*/
                             clientHandshake.state = Handshake.State.PHASE3
                         }
                         Handshake.State.PHASE3 -> {
                             val protocol = RPCProtocol()
-                            /*boxStream?.run {
-                                Log.d("finished", lazySodium.toHexStr(this.readFromServer(protocol.decode(data).body)))
-                            }*/
+                            boxStream = clientHandshake.createBoxStream()
+                            boxStream?.run {
+                                Log.d("finished", ls.toHexStr(this.readFromServer(protocol.decode(data).body)))
+                            }
 
                             val moshi = Moshi.Builder().build()
                             val adapter: JsonAdapter<SSBClient.Request> = moshi.adapter(

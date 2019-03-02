@@ -9,21 +9,16 @@ import java.nio.charset.StandardCharsets
 import kotlin.math.ceil
 import kotlin.math.min
 
-class BoxStream(val handshake: Handshake) {
+class BoxStream(
+    private val clientToServerKey: ByteArray,
+    private val serverToClientKey: ByteArray,
+    private val clientToServerNonce: ByteArray,
+    private val serverToClientNonce: ByteArray
+) {
     companion object {
         const val HEADER_SIZE = 34
         const val MAX_MESSAGE_SIZE = 4096
     }
-
-    init {
-        if (handshake.state != Handshake.State.COMPLETE)
-            throw ProtocolException("Handshake not complete.")
-    }
-
-    private val clientToServerKey = handshake.remoteKey
-    private val serverToClientKey = handshake.identityHandler.getIdentityPublicKey()
-    private val clientToServerNonce = handshake.remoteEphemeralKey!!.sliceArray(0 until SecretBox.NONCEBYTES)
-    private val serverToClientNonce = handshake.localEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)
 
     private val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
 
