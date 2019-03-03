@@ -10,7 +10,7 @@ import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 
-class BasicIdentityHandler: IdentityHandler {
+class BasicIdentityHandler(): IdentityHandler {
     companion object {
         const val KEY_ALGO = "ed25519"
 
@@ -21,10 +21,17 @@ class BasicIdentityHandler: IdentityHandler {
             throw IdentityHandler.IdentityException("Failed generating keys.")
         }
     }
+
     private val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
     private var keyPair: KeyPair? = null
 
+    constructor(publicKey: ByteArray, privateKey: ByteArray) : this() {
+        keyPair = KeyPair(Key.fromBytes(publicKey), Key.fromBytes(privateKey))
+    }
+
     override fun generateIdentityKeyPair(): Boolean {
+        if (keyPair != null)
+            return false
         return try {
             keyPair = ls.cryptoSignSeedKeypair(SecureRandom().generateSeed(Sign.SEEDBYTES))
             true

@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets
 import android.security.keystore.KeyProperties
 import android.security.keystore.KeyGenParameterSpec
 import android.os.Build
+import android.security.KeyPairGeneratorSpec
 import java.security.*
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -21,8 +22,11 @@ import android.util.Base64
 import androidx.annotation.RequiresApi
 import com.goterl.lazycode.lazysodium.utils.Key
 import java.lang.ref.WeakReference
+import java.math.BigInteger
+import java.util.*
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.GCMParameterSpec
+import javax.security.auth.x500.X500Principal
 
 class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
     companion object {
@@ -39,8 +43,6 @@ class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
         private const val RSA_MODE = "RSA/ECB/PKCS1Padding"
         private const val AES_MODE = "AES/GCM/NoPadding"
 
-        private val FIXED_IV = ByteArray(12)
-
         fun createWithGeneratedKeys(context: Context): AndroidKeyStoreIdentityHandler {
             val handler = AndroidKeyStoreIdentityHandler(context)
             if (handler.generateIdentityKeyPair())
@@ -50,9 +52,7 @@ class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
 
         fun checkIdentityKeyPairExists(context: Context): Boolean {
             val pref= context.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE)
-            return pref.contains(PREF_IDENTITY_PUBLIC_KEY) && pref.contains(
-                PREF_IDENTITY_ENCRYPTED_PRIVATE_KEY
-            )
+            return pref.contains(PREF_IDENTITY_PUBLIC_KEY) && pref.contains(PREF_IDENTITY_ENCRYPTED_PRIVATE_KEY)
         }
     }
 
@@ -67,27 +67,38 @@ class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
         contextRef.get()?.let {context ->
             if (!checkIdentityKeyPairExists(context)) {
                 ls.cryptoSignSeedKeypair(SecureRandom().generateSeed(Sign.SEEDBYTES))?.let { keyPair ->
-                    createKeystoreKeys(context)
                     val editor = context.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE).edit()
+
+                    //Encrypt private key
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        createAESKeystoreKey(context)
+                        val cipher = Cipher.getInstance(AES_MODE)
+                        cipher.init(Cipher.ENCRYPT_MODE, getAesKey())
+                        val encryptedKey = cipher.doFinal(keyPair.secretKey.asBytes)
+                        editor.putString(
+                            PREF_IDENTITY_ENCRYPTED_PRIVATE_KEY,
+                            Base64.encodeToString(encryptedKey, Base64.NO_WRAP)
+                        )
+                        editor.putString(PREF_IDENTITY_KEYSTORE_ALGO, AES_MODE)
+                        editor.putString(
+                            PREF_IDENTITY_KEYSTORE_IV,
+                            Base64.encodeToString(cipher.iv, Base64.NO_WRAP)
+                        )
+
+                    } else {
+                        createRSAKeystoreKeys(context)
+                        val encryptedKey = rsaEncrypt(keyPair.secretKey.asBytes)
+                        editor.putString(
+                            PREF_IDENTITY_ENCRYPTED_PRIVATE_KEY,
+                            Base64.encodeToString(encryptedKey, Base64.NO_WRAP)
+                        )
+                        editor.putString(PREF_IDENTITY_KEYSTORE_ALGO, RSA_MODE)
+                    }
                     editor.putString(
                         PREF_IDENTITY_PUBLIC_KEY,
                         Base64.encodeToString(keyPair.publicKey.asBytes, Base64.NO_WRAP)
                     )
                     editor.putString(PREF_IDENTITY_ALGORITHM, "ed25519")
-
-
-                    val randomIV = SecureRandom().generateSeed(12)
-
-
-                    //Encrypt private key
-                    val cipher = Cipher.getInstance(AES_MODE)
-                    cipher.init(Cipher.ENCRYPT_MODE, getAesKey())
-                    cipher.doFinal(keyPair.secretKey.asBytes).let {
-                        editor.putString(PREF_IDENTITY_ENCRYPTED_PRIVATE_KEY, Base64.encodeToString(it, Base64.NO_WRAP))
-                        editor.putString(PREF_IDENTITY_KEYSTORE_ALGO, AES_MODE)
-                        editor.putString(PREF_IDENTITY_KEYSTORE_IV, Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
-                    }
-
                     editor.apply()
                     return true
                 }
@@ -140,9 +151,16 @@ class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
         contextRef.get()?.run {
             val pref = getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE)
 
-            pref.getString(PREF_IDENTITY_ENCRYPTED_PRIVATE_KEY, null)?.let { encryptedKey ->
-                val iv = Base64.decode(pref.getString(PREF_IDENTITY_KEYSTORE_IV, null), Base64.NO_WRAP)
-                return aesDecrypt(Base64.decode(encryptedKey, Base64.NO_WRAP), iv)
+
+        pref.getString(PREF_IDENTITY_ENCRYPTED_PRIVATE_KEY, null)?.let { encryptedKey ->
+                pref.getString(PREF_IDENTITY_KEYSTORE_ALGO, null)?.let { algo ->
+                    return if (algo == RSA_MODE) {
+                        rsaDecrypt(Base64.decode(encryptedKey, Base64.NO_WRAP))
+                    } else {
+                        val iv = Base64.decode(pref.getString(PREF_IDENTITY_KEYSTORE_IV, null), Base64.NO_WRAP)
+                        aesDecrypt(Base64.decode(encryptedKey, Base64.NO_WRAP), iv)
+                    }
+                }
             }
         }
         throw IdentityHandler.IdentityException("Identity not found.")
@@ -155,96 +173,61 @@ class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
         return secretKeyEntry.secretKey
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
-    @Throws(
-        NoSuchProviderException::class,
-        NoSuchAlgorithmException::class,
-        InvalidAlgorithmParameterException::class
-    )
-    private fun createKeystoreKeys(context: Context) {
-        /*val start = GregorianCalendar()
-        val end = GregorianCalendar()
-        end.add(Calendar.YEAR, 5)
-
-        val kpGenerator = KeyPairGenerator.getInstance("RSA", PROVIDER_KEYSTORE)
-        val spec: AlgorithmParameterSpec
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            spec = KeyPairGeneratorSpec.Builder(context)
-                .setAlias(ALIAS_IDENTITY_KEYSTORE)
-                .setSubject(X500Principal("CN=$ALIAS_IDENTITY_KEYSTORE"))
-                .setSerialNumber(BigInteger.valueOf(3456789765432141))
-                .setStartDate(start.getTime())
-                .setEndDate(end.getTime())
-                .build()
-        } else {
-            spec = KeyGenParameterSpec.Builder(ALIAS_IDENTITY_KEYSTORE,
-                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
-                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setRandomizedEncryptionRequired(false)
-                .build()
-        }
-
-        kpGenerator.initialize(spec)
-        kpGenerator.generateKeyPair()*/
-
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, PROVIDER_KEYSTORE)
-            keyGenerator.init(
-                KeyGenParameterSpec.Builder(ALIAS_IDENTITY_KEYSTORE, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
-                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setRandomizedEncryptionRequired(true)
-                .build()
-            )
-            keyGenerator.generateKey()
-        } else {
-
-        }
-
-    }
-
-    @Throws(Exception::class)
-    private fun rsaEncrypt(secret: ByteArray): ByteArray {
+    private fun getRSAKey(): KeyPair {
         val keyStore = KeyStore.getInstance(PROVIDER_KEYSTORE)
         keyStore.load(null)
         val privateKey = keyStore.getKey(ALIAS_IDENTITY_KEYSTORE, null) as PrivateKey
         val publicKey = keyStore.getCertificate(ALIAS_IDENTITY_KEYSTORE).publicKey;
+        return KeyPair(publicKey, privateKey)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    fun createAESKeystoreKey(context: Context) {
+        val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, PROVIDER_KEYSTORE)
+        keyGenerator.init(
+            KeyGenParameterSpec.Builder(ALIAS_IDENTITY_KEYSTORE, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setRandomizedEncryptionRequired(true)
+                .build()
+        )
+        keyGenerator.generateKey()
+    }
+
+    fun createRSAKeystoreKeys(context: Context) {
+        val start = GregorianCalendar()
+        val end = GregorianCalendar()
+        end.add(Calendar.YEAR, 25)
+
+        val kpGenerator = KeyPairGenerator.getInstance("RSA", PROVIDER_KEYSTORE)
+        val spec = KeyPairGeneratorSpec.Builder(context)
+            .setAlias(ALIAS_IDENTITY_KEYSTORE)
+            .setSerialNumber(BigInteger.TEN)
+            .setSubject(X500Principal("CN=$ALIAS_IDENTITY_KEYSTORE CA Certificate"))
+            .setStartDate(start.time)
+            .setEndDate(end.time)
+            .build()
+        kpGenerator.initialize(spec)
+        kpGenerator.generateKeyPair()
+    }
+
+    @Throws(Exception::class)
+    private fun rsaEncrypt(data: ByteArray): ByteArray {
+        val keyPair = getRSAKey()
         // Encrypt the text
-
-        val inputCipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES)
-        inputCipher.init(Cipher.ENCRYPT_MODE, publicKey)
-
-        val outputStream = ByteArrayOutputStream()
-        val cipherOutputStream = CipherOutputStream(outputStream, inputCipher)
-        cipherOutputStream.write(secret)
-        cipherOutputStream.close()
-
-        return outputStream.toByteArray()
+        val cipher = Cipher.getInstance(RSA_MODE)
+        cipher.init(Cipher.ENCRYPT_MODE, keyPair.public)
+        return cipher.doFinal(data)
     }
 
     @Throws(Exception::class)
     private fun rsaDecrypt(encrypted: ByteArray): ByteArray {
         val keyStore = KeyStore.getInstance(PROVIDER_KEYSTORE)
         keyStore.load(null)
-        val privateKey = keyStore.getKey(ALIAS_IDENTITY_KEYSTORE, null) as PrivateKey
-        val output = Cipher.getInstance(RSA_MODE)
-        output.init(Cipher.DECRYPT_MODE, privateKey)
-        val cipherInputStream = CipherInputStream(ByteArrayInputStream(encrypted), output)
-        val values = mutableListOf<Byte>()
-        var nextByte: Int = cipherInputStream.read()
-        while (nextByte != -1) {
-            values.add(nextByte.toByte())
-            nextByte = cipherInputStream.read()
-        }
-
-        val bytes = ByteArray(values.size)
-        for (i in bytes.indices) {
-            bytes[i] = values[i]
-        }
-        return bytes
+        val keyPair = getRSAKey()
+        val cipher = Cipher.getInstance(RSA_MODE)
+        cipher.init(Cipher.DECRYPT_MODE, keyPair.private)
+        return cipher.doFinal(encrypted)
     }
 
     private fun aesDecrypt(encrypted: ByteArray, iv: ByteArray): ByteArray {
