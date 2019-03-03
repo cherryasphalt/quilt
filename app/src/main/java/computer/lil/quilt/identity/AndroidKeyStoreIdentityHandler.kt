@@ -75,13 +75,17 @@ class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
                     )
                     editor.putString(PREF_IDENTITY_ALGORITHM, "ed25519")
 
+
+                    val randomIV = SecureRandom().generateSeed(12)
+
+
                     //Encrypt private key
-                    /*rsaEncrypt(keyPair.secretKey.asBytes).let {
-                    editor.putString(PREF_IDENTITY_ENCRYPTED_PRIVATE_KEY, Base64.encodeToString(it, Base64.DEFAULT))
-                }*/
-                    aesEncrypt(keyPair.secretKey.asBytes).let {
+                    val cipher = Cipher.getInstance(AES_MODE)
+                    cipher.init(Cipher.ENCRYPT_MODE, getAesKey())
+                    cipher.doFinal(keyPair.secretKey.asBytes).let {
                         editor.putString(PREF_IDENTITY_ENCRYPTED_PRIVATE_KEY, Base64.encodeToString(it, Base64.NO_WRAP))
                         editor.putString(PREF_IDENTITY_KEYSTORE_ALGO, AES_MODE)
+                        editor.putString(PREF_IDENTITY_KEYSTORE_IV, Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
                     }
 
                     editor.apply()
@@ -137,8 +141,8 @@ class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
             val pref = getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE)
 
             pref.getString(PREF_IDENTITY_ENCRYPTED_PRIVATE_KEY, null)?.let { encryptedKey ->
-                //return rsaDecrypt(Base64.decode(encryptedKey, Base64.DEFAULT))
-                return aesDecrypt(Base64.decode(encryptedKey, Base64.NO_WRAP))
+                val iv = Base64.decode(pref.getString(PREF_IDENTITY_KEYSTORE_IV, null), Base64.NO_WRAP)
+                return aesDecrypt(Base64.decode(encryptedKey, Base64.NO_WRAP), iv)
             }
         }
         throw IdentityHandler.IdentityException("Identity not found.")
@@ -192,7 +196,7 @@ class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
                 KeyGenParameterSpec.Builder(ALIAS_IDENTITY_KEYSTORE, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setRandomizedEncryptionRequired(false)
+                .setRandomizedEncryptionRequired(true)
                 .build()
             )
             keyGenerator.generateKey()
@@ -243,15 +247,9 @@ class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
         return bytes
     }
 
-    private fun aesEncrypt(message: ByteArray): ByteArray {
+    private fun aesDecrypt(encrypted: ByteArray, iv: ByteArray): ByteArray {
         val cipher = Cipher.getInstance(AES_MODE)
-        cipher.init(Cipher.ENCRYPT_MODE, getAesKey(), GCMParameterSpec(128, FIXED_IV))
-        return cipher.doFinal(message)
-    }
-
-    private fun aesDecrypt(encrypted: ByteArray): ByteArray {
-        val cipher = Cipher.getInstance(AES_MODE)
-        cipher.init(Cipher.DECRYPT_MODE, getAesKey(), GCMParameterSpec(128, FIXED_IV))
+        cipher.init(Cipher.DECRYPT_MODE, getAesKey(), GCMParameterSpec(128, iv))
         return cipher.doFinal(encrypted)
     }
 }
