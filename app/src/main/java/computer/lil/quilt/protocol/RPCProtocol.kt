@@ -1,6 +1,9 @@
 package computer.lil.quilt.protocol
 
+import com.squareup.moshi.JsonReader
 import okio.Buffer
+import okio.BufferedSource
+import okio.Okio
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.experimental.and
@@ -52,72 +55,46 @@ class RPCProtocol {
 
             return RPCMessage(stream, enderror, bodyType, bodyLength, requestNumber, body)
         }
+
+
+        fun goodbye(requestNumber: Int): ByteArray {
+            return encode(RPCMessage(false, true, Companion.RPCBodyType.BINARY, 9, requestNumber, ByteArray(9)))
+        }
+
+        fun encode(rpcMessage: RPCMessage): ByteArray {
+            return encode(rpcMessage.body, rpcMessage.stream, rpcMessage.enderror, rpcMessage.bodyType, rpcMessage.requestNumber)
+        }
+
+        fun encode(
+            body: ByteArray,
+            stream: Boolean = true,
+            enderror: Boolean = false,
+            bodyType: RPCBodyType = Companion.RPCBodyType.JSON,
+            requestNumber: Int = 0
+        ): ByteArray {
+            var headerFlags = 0x00.toByte()
+            headerFlags = headerFlags or JSON_FLAG
+            if (stream) headerFlags = headerFlags or STREAM
+            if (enderror) headerFlags = headerFlags or ENDERROR
+            headerFlags = when (bodyType) {
+                Companion.RPCBodyType.JSON -> headerFlags or JSON_FLAG
+                Companion.RPCBodyType.UTF8 -> headerFlags or UTF8_FLAG
+                Companion.RPCBodyType.BINARY -> headerFlags
+            }
+
+            val bodyLength = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt(body.size).array()
+            val requestNumberArray = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt(requestNumber).array()
+
+            return byteArrayOf(headerFlags, *bodyLength, *requestNumberArray, *body)
+        }
     }
 
-    data class RPCMessage(
+    class RPCMessage(
         val stream: Boolean,
         val enderror: Boolean,
         val bodyType: RPCBodyType,
         val bodyLength: Int,
         val requestNumber: Int,
         val body: ByteArray
-    ) {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as RPCMessage
-
-            if (stream != other.stream) return false
-            if (enderror != other.enderror) return false
-            if (bodyType != other.bodyType) return false
-            if (bodyLength != other.bodyLength) return false
-            if (requestNumber != other.requestNumber) return false
-            if (!body.contentEquals(other.body)) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = stream.hashCode()
-            result = 31 * result + enderror.hashCode()
-            result = 31 * result + bodyType.hashCode()
-            result = 31 * result + bodyLength
-            result = 31 * result + requestNumber
-            result = 31 * result + body.contentHashCode()
-            return result
-        }
-    }
-
-    fun goodbye(requestNumber: Int): ByteArray {
-        return encode(RPCMessage(false, true, Companion.RPCBodyType.BINARY, 9, requestNumber, ByteArray(9)))
-    }
-
-    fun encode(rpcMessage: RPCMessage): ByteArray {
-        return encode(rpcMessage.body, rpcMessage.stream, rpcMessage.enderror, rpcMessage.bodyType, rpcMessage.requestNumber)
-    }
-
-    fun encode(
-        body: ByteArray,
-        stream: Boolean = true,
-        enderror: Boolean = false,
-        bodyType: RPCBodyType = Companion.RPCBodyType.JSON,
-        requestNumber: Int = 0
-    ): ByteArray {
-        var headerFlags = 0x00.toByte()
-        headerFlags = headerFlags or JSON_FLAG
-        if (stream) headerFlags = headerFlags or STREAM
-        if (enderror) headerFlags = headerFlags or ENDERROR
-        headerFlags = when (bodyType) {
-            Companion.RPCBodyType.JSON -> headerFlags or JSON_FLAG
-            Companion.RPCBodyType.UTF8 -> headerFlags or UTF8_FLAG
-            Companion.RPCBodyType.BINARY -> headerFlags
-        }
-
-        val bodyLength = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt(body.size).array()
-        val requestNumberArray = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt(requestNumber).array()
-
-        return byteArrayOf(headerFlags, *bodyLength, *requestNumberArray, *body)
-    }
-
+    )
 }

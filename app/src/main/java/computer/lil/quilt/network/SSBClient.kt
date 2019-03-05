@@ -25,8 +25,8 @@ class SSBClient(identityHandler: IdentityHandler, networkId: ByteArray, remoteKe
             Socket(host, port).run {
                 source = source().buffer()
                 sink = sink().buffer()
+                performHandshake()
             }
-            true
         } catch (e: IOException) {
             false
         }
@@ -55,12 +55,27 @@ class SSBClient(identityHandler: IdentityHandler, networkId: ByteArray, remoteKe
         return false
     }
 
+    fun writeToPeer(message: RPCProtocol.RPCMessage) {
+        try {
+            sink?.run {
+                val rpcEncode = RPCProtocol.encode(message)
+                val boxStreamEncode = boxStream!!.sendToServer(rpcEncode)
+                write(boxStreamEncode)
+                flush()
+            }
+        } catch (e: IOException) {
+            socket?.let {
+                closeQuietly(it)
+            }
+        }
+    }
+
     fun readFromPeer() {
         try {
             source?.run {
                 val buffer = Buffer()
                 val rpcBuffer = Buffer()
-                var rpcExpectedBodyLength = 0
+                var rpcExpectedLength = 0
 
                 var byteCount = read(buffer, 8192L)
                 while (byteCount != -1L) {
@@ -68,17 +83,17 @@ class SSBClient(identityHandler: IdentityHandler, networkId: ByteArray, remoteKe
                     val decoded = boxStream?.readFromServer(readBytes)
 
                     if (rpcBuffer.size == 0L)
-                        rpcExpectedBodyLength = RPCProtocol.getBodyLength(decoded!!)
+                        rpcExpectedLength = RPCProtocol.getBodyLength(decoded!!) + RPCProtocol.HEADER_SIZE
 
                     rpcBuffer.write(decoded!!)
-                    while (rpcExpectedBodyLength != 0 && rpcBuffer.size >= rpcExpectedBodyLength.toLong() + RPCProtocol.HEADER_SIZE) {
+                    while (rpcExpectedLength != 0 && rpcBuffer.size >= rpcExpectedLength.toLong()) {
                         subject.onNext(
                             RPCProtocol.decode(
-                                rpcBuffer.readByteArray(rpcExpectedBodyLength.toLong() + RPCProtocol.HEADER_SIZE)
+                                rpcBuffer.readByteArray(rpcExpectedLength.toLong())
                             )
                         )
 
-                        rpcExpectedBodyLength = if (rpcBuffer.size > 0L)
+                        rpcExpectedLength = if (rpcBuffer.size > 0L)
                             RPCProtocol.getBodyLength(rpcBuffer.peek().readByteArray())
                         else
                             0
