@@ -1,29 +1,24 @@
 package computer.lil.quilt.identity
 
 import android.content.Context
+import android.os.Build
+import android.security.KeyPairGeneratorSpec
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import android.util.Base64
+import androidx.annotation.RequiresApi
 import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.interfaces.Sign
-import computer.lil.quilt.BuildConfig
-import java.lang.Exception
-import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
-import android.security.keystore.KeyProperties
-import android.security.keystore.KeyGenParameterSpec
-import android.os.Build
-import android.security.KeyPairGeneratorSpec
-import java.security.*
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import javax.crypto.Cipher
-import javax.crypto.CipherInputStream
-import javax.crypto.CipherOutputStream
-import android.util.Base64
-import androidx.annotation.RequiresApi
 import com.goterl.lazycode.lazysodium.utils.Key
+import computer.lil.quilt.BuildConfig
 import java.lang.ref.WeakReference
 import java.math.BigInteger
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
+import java.security.*
 import java.util.*
+import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.GCMParameterSpec
 import javax.security.auth.x500.X500Principal
@@ -42,6 +37,13 @@ class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
         private const val PROVIDER_KEYSTORE = "AndroidKeyStore"
         private const val RSA_MODE = "RSA/ECB/PKCS1Padding"
         private const val AES_MODE = "AES/GCM/NoPadding"
+
+        fun getInstance(context: Context): AndroidKeyStoreIdentityHandler {
+            val handler = AndroidKeyStoreIdentityHandler(context)
+            if (!checkIdentityKeyPairExists(context))
+                handler.generateIdentityKeyPair()
+            return handler
+        }
 
         fun createWithGeneratedKeys(context: Context): AndroidKeyStoreIdentityHandler {
             val handler = AndroidKeyStoreIdentityHandler(context)

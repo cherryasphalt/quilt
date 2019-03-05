@@ -92,8 +92,8 @@ abstract class Handshake(
                 )
             )
 
-        val localToRemoteNonce = remoteEphemeralKey!!.sliceArray(0 until SecretBox.NONCEBYTES)
-        val remoteToLocalNonce = localEphemeralKeyPair.publicKey.asBytes.sliceArray(0 until SecretBox.NONCEBYTES)
+        val localToRemoteNonce = createHmac(networkId, remoteEphemeralKey!!).sliceArray(0 until SecretBox.NONCEBYTES)
+        val remoteToLocalNonce = createHmac(networkId, localEphemeralKeyPair.publicKey.asBytes).sliceArray(0 until SecretBox.NONCEBYTES)
 
         return BoxStream(localToRemoteKey, remoteToLocalKey, localToRemoteNonce, remoteToLocalNonce)
     }

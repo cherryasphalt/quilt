@@ -36,6 +36,6 @@ class ScuttlebuttInstrumentedTest {
         assertTrue(serverHandshake.verifyHelloMessage(clientHandshake.createHelloMessage()))
         assertTrue(clientHandshake.verifyHelloMessage(serverHandshake.createHelloMessage()))
         assertTrue(serverHandshake.verifyClientAuthentication(clientHandshake.createAuthenticateMessage()))
-        assertTrue(clientHandshake.validateServerAcceptResponse(serverHandshake.createAcceptMessage()))
+        assertTrue(clientHandshake.verifyServerAcceptResponse(serverHandshake.createAcceptMessage()))
     }
 }

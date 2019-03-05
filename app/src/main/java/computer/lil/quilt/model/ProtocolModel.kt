@@ -15,7 +15,7 @@ import computer.lil.quilt.identity.AndroidKeyStoreIdentityHandler
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
-class SSBClient {
+class ProtocolModel {
     companion object {
         private val moshi = Moshi.Builder().build()
 
@@ -42,7 +42,7 @@ class SSBClient {
 
         fun signMessage(context: Context, preSignatureMessage: PreSignatureMessage): String {
             val adapter: JsonAdapter<PreSignatureMessage> = moshi.adapter(
-                SSBClient.PreSignatureMessage::class.java)
+                ProtocolModel.PreSignatureMessage::class.java)
             val json = adapter.toJson(preSignatureMessage)
             val signature = Base64.encodeToString(AndroidKeyStoreIdentityHandler(context).signUsingIdentity(json), Base64.DEFAULT)
             return "$signature.sig.ed25519"

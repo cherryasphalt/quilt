@@ -78,7 +78,7 @@ class BoxStream(
         val header = ByteArray(HEADER_SIZE - SecretBox.MACBYTES)
 
         if (ls.cryptoSecretBoxOpenEasy(header, encryptedHeader, encryptedHeader.size.toLong(), headerNonce, key)) {
-            val messageLength = ByteBuffer.wrap(header.sliceArray(0 until 2)).short.toInt()
+            val messageLength = ByteBuffer.wrap(header.sliceArray(0 until 2)).order(ByteOrder.BIG_ENDIAN).short.toInt()
             val bodyTag = header.sliceArray(2 until header.size)
 
             val encryptedBody =
@@ -88,7 +88,7 @@ class BoxStream(
 
             return decryptedBody
         }
-        throw Exception()
+        throw ProtocolException("Stream decryption error.")
     }
 
     fun encryptMessage(message: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray {

@@ -6,7 +6,7 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import android.os.AsyncTask
 import androidx.room.Room
-import computer.lil.quilt.model.SSBClient
+import computer.lil.quilt.model.ProtocolModel
 import computer.lil.quilt.util.SingletonHolder
 
 @Database(entities = [Message::class], version = 1)
@@ -34,7 +34,7 @@ abstract class SSBDatabase: RoomDatabase() {
 
         init {
             mDao = Companion.getInstance(context).messageDao()
-            helloMessage = SSBClient.createMessage(
+            helloMessage = ProtocolModel.createMessage(
                 context,
                 mapOf("type" to "post", "text" to "hello")
             )

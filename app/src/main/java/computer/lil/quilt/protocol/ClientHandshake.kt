@@ -32,7 +32,7 @@ class ClientHandshake(identityHandler: IdentityHandler, serverKey: ByteArray, ne
         return payload
     }
 
-    fun validateServerAcceptResponse(data: ByteArray): Boolean {
+    fun verifyServerAcceptResponse(data: ByteArray): Boolean {
         val zeroNonce = ByteArray(SecretBox.NONCEBYTES)
         val responseKey = ByteArray(Hash.SHA256_BYTES)
         val preKey = byteArrayOf(*networkId, *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes, *sharedSecretAb!!.asBytes)

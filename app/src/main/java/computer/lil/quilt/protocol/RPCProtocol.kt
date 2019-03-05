@@ -1,5 +1,6 @@
 package computer.lil.quilt.protocol
 
+import okio.Buffer
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.experimental.and
@@ -16,6 +17,40 @@ class RPCProtocol {
 
         enum class RPCBodyType {
             UTF8, JSON, BINARY
+        }
+
+        fun getBodyLength(header: ByteArray): Int {
+            if (header.size < HEADER_SIZE)
+                throw ProtocolException("Header wrong size.")
+            return ByteBuffer.wrap(header.sliceArray(1 until 5)).order(ByteOrder.BIG_ENDIAN).int
+        }
+
+        fun decodeBodyLength(encoded: Buffer): Int {
+            val header = ByteArray(HEADER_SIZE)
+            val readSize = encoded.read(header)
+
+            return if (readSize == HEADER_SIZE) getBodyLength(header)
+            else -1
+        }
+
+        fun decode(encoded: ByteArray): RPCMessage {
+            val header = encoded.sliceArray(0 until HEADER_SIZE)
+
+            val flags = header[0]
+            val stream = (flags and STREAM) != 0x00.toByte()
+            val enderror = (flags and ENDERROR) != 0x00.toByte()
+
+            val bodyType = when {
+                flags and JSON_FLAG != 0x00.toByte() -> Companion.RPCBodyType.JSON
+                flags and UTF8_FLAG != 0x00.toByte() -> Companion.RPCBodyType.UTF8
+                else -> Companion.RPCBodyType.BINARY
+            }
+
+            val bodyLength = ByteBuffer.wrap(header.sliceArray(1 until 5)).order(ByteOrder.BIG_ENDIAN).int
+            val requestNumber = ByteBuffer.wrap(header.sliceArray(5 until 9)).order(ByteOrder.BIG_ENDIAN).int
+            val body = encoded.sliceArray(HEADER_SIZE until (bodyLength + HEADER_SIZE))
+
+            return RPCMessage(stream, enderror, bodyType, bodyLength, requestNumber, body)
         }
     }
 
@@ -83,26 +118,6 @@ class RPCProtocol {
         val requestNumberArray = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt(requestNumber).array()
 
         return byteArrayOf(headerFlags, *bodyLength, *requestNumberArray, *body)
-    }
-
-    fun decode(encoded: ByteArray): RPCMessage {
-        val header = encoded.sliceArray(0 until HEADER_SIZE)
-
-        val flags = header[0]
-        val stream = (flags and STREAM) != 0x00.toByte()
-        val enderror = (flags and ENDERROR) != 0x00.toByte()
-
-        val bodyType = when {
-            flags and JSON_FLAG != 0x00.toByte() -> Companion.RPCBodyType.JSON
-            flags and UTF8_FLAG != 0x00.toByte() -> Companion.RPCBodyType.UTF8
-            else -> Companion.RPCBodyType.BINARY
-        }
-
-        val bodyLength = ByteBuffer.wrap(header.sliceArray(1 until 5)).order(ByteOrder.BIG_ENDIAN).int
-        val requestNumber = ByteBuffer.wrap(header.sliceArray(5 until 9)).order(ByteOrder.BIG_ENDIAN).int
-        val body = encoded.sliceArray(HEADER_SIZE until (bodyLength + HEADER_SIZE))
-
-        return RPCMessage(stream, enderror, bodyType, bodyLength, requestNumber, body)
     }
 
 }
