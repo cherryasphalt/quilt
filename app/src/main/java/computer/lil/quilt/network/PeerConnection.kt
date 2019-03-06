@@ -4,12 +4,19 @@ import computer.lil.quilt.identity.IdentityHandler
 import computer.lil.quilt.protocol.BoxStream
 import computer.lil.quilt.protocol.ClientHandshake
 import computer.lil.quilt.protocol.RPCProtocol
+import io.reactivex.Emitter
+import io.reactivex.Observable
+import io.reactivex.ObservableEmitter
+import io.reactivex.ObservableOnSubscribe
 import io.reactivex.subjects.PublishSubject
-import java.net.Socket
 import okio.*
-import java.io.*
+import java.io.Closeable
+import java.io.IOException
+import java.net.Socket
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
-class SSBClient(identityHandler: IdentityHandler, networkId: ByteArray, remoteKey: ByteArray) {
+class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, remoteKey: ByteArray) {
 
     private val clientHandshake = ClientHandshake(identityHandler, remoteKey, networkId)
     var socket: Socket? = null
@@ -17,8 +24,24 @@ class SSBClient(identityHandler: IdentityHandler, networkId: ByteArray, remoteKe
     var sink: BufferedSink? = null
     var boxStream: BoxStream? = null
 
-    private val openSockets = mutableSetOf<Socket>()
     val subject: PublishSubject<RPCProtocol.RPCMessage> = PublishSubject.create()
+
+    var executor: ExecutorService = Executors.newSingleThreadExecutor()
+
+    fun listenToPeer(host: String, port: Int): Observable<RPCProtocol.RPCMessage> {
+        val handler: ObservableOnSubscribe<RPCProtocol.RPCMessage> = ObservableOnSubscribe {
+                emitter: ObservableEmitter<RPCProtocol.RPCMessage> ->
+            val future = executor.submit {
+                if (connectToPeer(host, port)) {
+                    readFromPeer(emitter)
+                }
+                emitter.onComplete()
+            }
+            emitter.setCancellable { future.cancel(false) }
+        }
+
+        return Observable.create(handler)
+    }
 
     fun connectToPeer(host: String, port: Int): Boolean {
         return try {
@@ -70,7 +93,7 @@ class SSBClient(identityHandler: IdentityHandler, networkId: ByteArray, remoteKe
         }
     }
 
-    fun readFromPeer() {
+    fun readFromPeer(emitter: Emitter<RPCProtocol.RPCMessage>) {
         try {
             source?.run {
                 val buffer = Buffer()
@@ -87,7 +110,7 @@ class SSBClient(identityHandler: IdentityHandler, networkId: ByteArray, remoteKe
 
                     rpcBuffer.write(decoded!!)
                     while (rpcExpectedLength != 0 && rpcBuffer.size >= rpcExpectedLength.toLong()) {
-                        subject.onNext(
+                        emitter.onNext(
                             RPCProtocol.decode(
                                 rpcBuffer.readByteArray(rpcExpectedLength.toLong())
                             )
