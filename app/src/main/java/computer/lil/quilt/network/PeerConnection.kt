@@ -1,6 +1,8 @@
 package computer.lil.quilt.network
 
 import computer.lil.quilt.identity.IdentityHandler
+import computer.lil.quilt.model.RPCMessage
+import computer.lil.quilt.model.RPCRequest
 import computer.lil.quilt.protocol.BoxStream
 import computer.lil.quilt.protocol.ClientHandshake
 import computer.lil.quilt.protocol.RPCProtocol
@@ -8,7 +10,6 @@ import io.reactivex.Emitter
 import io.reactivex.Observable
 import io.reactivex.ObservableEmitter
 import io.reactivex.ObservableOnSubscribe
-import io.reactivex.subjects.PublishSubject
 import okio.*
 import java.io.Closeable
 import java.io.IOException
@@ -23,17 +24,27 @@ class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, rem
     var source: BufferedSource? = null
     var sink: BufferedSink? = null
     var boxStream: BoxStream? = null
-
-    val subject: PublishSubject<RPCProtocol.RPCMessage> = PublishSubject.create()
-
     var executor: ExecutorService = Executors.newSingleThreadExecutor()
+    var clientToServerRequestNumber = 0
+    val requestQueue = mutableListOf<RPCRequest>()
 
-    fun listenToPeer(host: String, port: Int): Observable<RPCProtocol.RPCMessage> {
-        val handler: ObservableOnSubscribe<RPCProtocol.RPCMessage> = ObservableOnSubscribe {
-                emitter: ObservableEmitter<RPCProtocol.RPCMessage> ->
+    /*fun submitRequest(request: RPCRequest): Observable<> {
+        requestQueue.add(request)
+
+        val moshi = Moshi.Builder().build()
+        val jsonAdapter = moshi.adapter(RPCRequest::class.java)
+        val json = jsonAdapter.toJson(request).toByteArray()
+        RPCProtocol.RPCMessage(true, false, RPCProtocol.Companion.RPCBodyType.JSON, json.size, ++clientToServerRequestNumber, json)
+    }*/
+
+    fun listenToPeer(): Observable<RPCMessage> {
+        val handler: ObservableOnSubscribe<RPCMessage> = ObservableOnSubscribe {
+                emitter: ObservableEmitter<RPCMessage> ->
             val future = executor.submit {
-                if (connectToPeer(host, port)) {
-                    readFromPeer(emitter)
+                socket?.run {
+                    if(isConnected && clientHandshake.completed) {
+                        readFromPeer(emitter)
+                    }
                 }
                 emitter.onComplete()
             }
@@ -43,11 +54,28 @@ class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, rem
         return Observable.create(handler)
     }
 
-    fun connectToPeer(host: String, port: Int): Boolean {
+    fun connectToPeer(host: String, port: Int): Observable<Boolean> {
+        val handler: ObservableOnSubscribe<Boolean> = ObservableOnSubscribe {
+                emitter: ObservableEmitter<Boolean> ->
+            val future = executor.submit {
+                emitter.onNext(start(host, port))
+                emitter.onComplete()
+            }
+            emitter.setCancellable { future.cancel(false) }
+        }
+
+        return Observable.create(handler)
+    }
+
+
+    private fun start(host: String, port: Int): Boolean {
         return try {
             Socket(host, port).run {
+                socket = this
                 source = source().buffer()
                 sink = sink().buffer()
+                clientToServerRequestNumber = 0
+                requestQueue.clear()
                 performHandshake()
             }
         } catch (e: IOException) {
@@ -55,7 +83,7 @@ class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, rem
         }
     }
 
-    fun performHandshake(): Boolean {
+    private fun performHandshake(): Boolean {
         val buffer = Buffer()
         sink?.run {
             write(clientHandshake.createHelloMessage())
@@ -78,7 +106,7 @@ class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, rem
         return false
     }
 
-    fun writeToPeer(message: RPCProtocol.RPCMessage) {
+    fun writeToPeer(message: RPCMessage) {
         try {
             sink?.run {
                 val rpcEncode = RPCProtocol.encode(message)
@@ -93,7 +121,7 @@ class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, rem
         }
     }
 
-    fun readFromPeer(emitter: Emitter<RPCProtocol.RPCMessage>) {
+    private fun readFromPeer(emitter: Emitter<RPCMessage>) {
         try {
             source?.run {
                 val buffer = Buffer()

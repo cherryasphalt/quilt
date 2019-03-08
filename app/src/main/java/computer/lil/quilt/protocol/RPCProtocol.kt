@@ -1,6 +1,7 @@
 package computer.lil.quilt.protocol
 
 import com.squareup.moshi.JsonReader
+import computer.lil.quilt.model.RPCMessage
 import okio.Buffer
 import okio.BufferedSource
 import okio.Okio
@@ -88,13 +89,4 @@ class RPCProtocol {
             return byteArrayOf(headerFlags, *bodyLength, *requestNumberArray, *body)
         }
     }
-
-    class RPCMessage(
-        val stream: Boolean,
-        val enderror: Boolean,
-        val bodyType: RPCBodyType,
-        val bodyLength: Int,
-        val requestNumber: Int,
-        val body: ByteArray
-    )
 }

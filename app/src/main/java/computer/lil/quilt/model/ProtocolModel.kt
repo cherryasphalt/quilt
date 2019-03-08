@@ -60,18 +60,6 @@ class ProtocolModel {
         }
     }
 
-    enum class RequestType() {
-        @Json(name="async") ASYNC(),
-        @Json(name="source") SOURCE()
-    }
-
-    @JsonClass(generateAdapter = true)
-    data class Request(
-        val name: List<String>,
-        val type: RequestType,
-        val args: Map<String, Any>
-    )
-
     @JsonClass(generateAdapter = true)
     data class Response(
         val key: String,

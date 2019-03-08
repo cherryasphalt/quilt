@@ -6,10 +6,12 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import android.os.AsyncTask
 import androidx.room.Room
+import androidx.room.TypeConverters
 import computer.lil.quilt.model.ProtocolModel
 import computer.lil.quilt.util.SingletonHolder
 
-@Database(entities = [Message::class], version = 1)
+@Database(entities = [Message::class, Feed::class, Blob::class], version = 1)
+@TypeConverters(DBTypeConverter::class)
 abstract class SSBDatabase: RoomDatabase() {
     companion object: SingletonHolder<SSBDatabase, Context>({
         Room.databaseBuilder(
