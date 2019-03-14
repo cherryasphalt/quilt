@@ -1,6 +1,9 @@
 package computer.lil.quilt.network
 
+import android.util.Log
+import com.squareup.moshi.Moshi
 import computer.lil.quilt.identity.IdentityHandler
+import computer.lil.quilt.model.RPCJsonAdapterFactory
 import computer.lil.quilt.model.RPCMessage
 import computer.lil.quilt.model.RPCRequest
 import computer.lil.quilt.protocol.BoxStream
@@ -24,18 +27,10 @@ class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, rem
     var source: BufferedSource? = null
     var sink: BufferedSink? = null
     var boxStream: BoxStream? = null
-    var executor: ExecutorService = Executors.newSingleThreadExecutor()
+    var executor: ExecutorService = Executors.newScheduledThreadPool(3)
     var clientToServerRequestNumber = 0
-    val requestQueue = mutableListOf<RPCRequest>()
-
-    /*fun submitRequest(request: RPCRequest): Observable<> {
-        requestQueue.add(request)
-
-        val moshi = Moshi.Builder().build()
-        val jsonAdapter = moshi.adapter(RPCRequest::class.java)
-        val json = jsonAdapter.toJson(request).toByteArray()
-        RPCProtocol.RPCMessage(true, false, RPCProtocol.Companion.RPCBodyType.JSON, json.size, ++clientToServerRequestNumber, json)
-    }*/
+    private val requestQueue = mutableListOf<RPCRequest>()
+    private val writeQueue = Buffer()
 
     fun listenToPeer(): Observable<RPCMessage> {
         val handler: ObservableOnSubscribe<RPCMessage> = ObservableOnSubscribe {
@@ -43,6 +38,7 @@ class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, rem
             val future = executor.submit {
                 socket?.run {
                     if(isConnected && clientHandshake.completed) {
+                        writeRequests()
                         readFromPeer(emitter)
                     }
                 }
@@ -70,13 +66,17 @@ class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, rem
 
     private fun start(host: String, port: Int): Boolean {
         return try {
-            Socket(host, port).run {
-                socket = this
-                source = source().buffer()
-                sink = sink().buffer()
-                clientToServerRequestNumber = 0
-                requestQueue.clear()
-                performHandshake()
+            if (socket == null || !socket!!.isConnected || !clientHandshake.completed) {
+                Socket(host, port).run {
+                    socket = this
+                    source = source().buffer()
+                    sink = sink().buffer()
+                    clientToServerRequestNumber = 0
+                    requestQueue.clear()
+                    performHandshake()
+                }
+            } else {
+                return true
             }
         } catch (e: IOException) {
             false
@@ -106,10 +106,48 @@ class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, rem
         return false
     }
 
+    fun writeRequests() {
+        val createHistoryStream = RPCRequest.RequestCreateHistoryStream(
+            args = listOf(
+                RPCRequest.RequestCreateHistoryStream.Arg("@Z2rNu9oinC9LzYPcaaOjEELE7pImbQnKu2mbCzBmsN4=.ed25519")
+            )
+        )
+
+        val moshi = Moshi.Builder().add(RPCJsonAdapterFactory()).build()
+        val jsonAdapter = moshi.adapter(RPCRequest.RequestCreateHistoryStream::class.java)
+        val payload = jsonAdapter.toJson(createHistoryStream).toByteArray()
+
+        val blobsCreateWants = RPCRequest.RequestBlobsCreateWants(args = listOf())
+        val jsonAdapter2 = moshi.adapter(RPCRequest.RequestBlobsCreateWants::class.java)
+        val payload2 = jsonAdapter2.toJson(blobsCreateWants).toByteArray()
+
+        /*val response2 = RPCMessage(
+            true,
+            false,
+            RPCProtocol.Companion.RPCBodyType.JSON,
+            payload2.size,
+            ++clientToServerRequestNumber,
+            payload2
+        )*/
+
+        val response = RPCMessage(
+            true,
+            false,
+            RPCProtocol.Companion.RPCBodyType.JSON,
+            payload.size,
+            ++clientToServerRequestNumber,
+            payload
+        )
+
+        //writeToPeer(response2)
+        writeToPeer(response)
+    }
+
     fun writeToPeer(message: RPCMessage) {
         try {
             sink?.run {
                 val rpcEncode = RPCProtocol.encode(message)
+                Log.d("writing", message.toString())
                 val boxStreamEncode = boxStream!!.sendToServer(rpcEncode)
                 write(boxStreamEncode)
                 flush()
@@ -162,6 +200,7 @@ class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, rem
 
     private fun closeQuietly(closeable: Closeable) {
         try {
+            Log.d("closing socket", "closing")
             closeable.close()
         } catch (ignored: IOException) { }
     }

@@ -6,7 +6,7 @@ apply plugin: 'kotlin-kapt'
 android {
     compileSdkVersion 28
     defaultConfig {
-        applicationId "computer.lil.batchwork"
+        applicationId "computer.lil.quilt"
         minSdkVersion 21
         targetSdkVersion 28
         versionCode 1

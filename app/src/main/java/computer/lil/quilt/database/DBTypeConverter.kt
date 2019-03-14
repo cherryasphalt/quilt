@@ -7,18 +7,6 @@ class DBTypeConverter {
     companion object {
         @TypeConverter
         @JvmStatic
-        fun toHashAlgo(algo: String): HashAlgo {
-            return HashAlgo.valueOf(algo)
-        }
-
-        @TypeConverter
-        @JvmStatic
-        fun fromHashAlgo(algo: HashAlgo): String {
-            return algo.value
-        }
-
-        @TypeConverter
-        @JvmStatic
         fun toUri(uri: Uri): String {
             return uri.toString()
         }

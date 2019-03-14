@@ -14,7 +14,7 @@ data class Message(
     @ColumnInfo(name = "sequence") var sequence: Int,
     @ColumnInfo(name = "timestamp") var timestamp: Long,
     @ColumnInfo(name = "hash") var hash: String,
-    //@ColumnInfo(name = "content") val content: Map<String, Any>,
+    //@ColumnInfo(name = "content") val content: Content,
     @ColumnInfo(name = "content") val content: String,
     @ColumnInfo(name = "signature") val signature: String
 )
