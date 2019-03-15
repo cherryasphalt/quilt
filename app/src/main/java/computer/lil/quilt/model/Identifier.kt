@@ -20,7 +20,7 @@ class Identifier(
 
             val split = algoRegex.split(from, 2)
             val algo = split[1]
-            val keyHash = split[0].substring(1 until split[0].length)
+            val keyHash = from.substring(1 until (from.length - 1 - algo.length))
 
             return Identifier(keyHash, algo, type)
         }
