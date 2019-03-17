@@ -13,7 +13,7 @@ class InviteCodeTest {
         val inviteCode = InviteCode.fromString(from)
         Assert.assertNotNull(inviteCode)
         inviteCode?.run {
-            Assert.assertEquals(domain, "zie.one")
+            Assert.assertEquals(host, "zie.one")
             Assert.assertEquals(port, 8008)
             Assert.assertEquals(pubKey.algorithm, "ed25519")
             Assert.assertEquals(pubKey.keyHash, "tgzHDm9HEN0k5wFRLFmNPyGZYNF/M5KpkZqCRhgowVE=")

@@ -3,6 +3,7 @@ package computer.lil.quilt.network
 import android.util.Log
 import com.squareup.moshi.Moshi
 import computer.lil.quilt.identity.IdentityHandler
+import computer.lil.quilt.model.InviteCode
 import computer.lil.quilt.model.RPCJsonAdapterFactory
 import computer.lil.quilt.model.RPCMessage
 import computer.lil.quilt.model.RPCRequest
@@ -27,7 +28,7 @@ class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, rem
     var source: BufferedSource? = null
     var sink: BufferedSink? = null
     var boxStream: BoxStream? = null
-    var executor: ExecutorService = Executors.newScheduledThreadPool(3)
+    var executor = Executors.newScheduledThreadPool(3)
     var clientToServerRequestNumber = 0
     private val requestQueue = mutableListOf<RPCRequest>()
     private val writeQueue = Buffer()
@@ -55,6 +56,19 @@ class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, rem
                 emitter: ObservableEmitter<Boolean> ->
             val future = executor.submit {
                 emitter.onNext(start(host, port))
+                emitter.onComplete()
+            }
+            emitter.setCancellable { future.cancel(false) }
+        }
+
+        return Observable.create(handler)
+    }
+
+    fun connectToPub(inviteCode: InviteCode): Observable<Boolean> {
+        val handler: ObservableOnSubscribe<Boolean> = ObservableOnSubscribe {
+                emitter: ObservableEmitter<Boolean> ->
+            val future = executor.submit {
+                emitter.onNext(start(inviteCode.host, inviteCode.port))
                 emitter.onComplete()
             }
             emitter.setCancellable { future.cancel(false) }

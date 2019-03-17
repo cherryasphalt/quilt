@@ -36,7 +36,7 @@ class RequestQueue {
             when (request.name[0]) {
                 RPCRequest.REQUEST_CREATE_HISTORY_STREAM -> {
                     //get history from db
-                    refuseRequest(requestPair.first, connection)
+                    endStream(requestPair.first, connection)
                 }
                 RPCRequest.REQUEST_CREATE_USER_STREAM -> {
                     //something
@@ -72,13 +72,46 @@ class RequestQueue {
         val payload = "{}".toByteArray()
         val response = RPCMessage(
             true,
-            true,
+            false,
             RPCProtocol.Companion.RPCBodyType.JSON,
             payload.size,
             -requestNumber,
             payload
         )
         connection.writeToPeer(response)
+    }
+
+    private fun endStream(requestNumber: Int, connection: PeerConnection) {
+        val moshi = Moshi.Builder().add(RPCJsonAdapterFactory()).build()
+        val jsonAdapter = moshi.adapter(Boolean::class.java)
+
+        val payload2 = jsonAdapter.toJson(true).toByteArray()
+        val response2 = RPCMessage(
+            true,
+            true,
+            RPCProtocol.Companion.RPCBodyType.JSON,
+            payload2.size,
+            -requestNumber,
+            payload2
+        )
+        connection.writeToPeer(response2)
+
+        val createHistoryStream = RPCRequest.RequestCreateHistoryStream(
+            args = listOf(
+                RPCRequest.RequestCreateHistoryStream.Arg("@Z2rNu9oinC9LzYPcaaOjEELE7pImbQnKu2mbCzBmsN4=.ed25519")
+            )
+        )
+        val payload = moshi.adapter(RPCRequest.RequestCreateHistoryStream::class.java).toJson(createHistoryStream).toByteArray()
+        val response = RPCMessage(
+            true,
+            false,
+            RPCProtocol.Companion.RPCBodyType.JSON,
+            payload.size,
+            1,
+            payload
+        )
+        connection.writeToPeer(response)
+
     }
 
     private fun checkValidRequest(request: RPCMessage): Boolean {
