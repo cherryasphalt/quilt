@@ -4,11 +4,11 @@ import android.net.Uri
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.squareup.moshi.Json
+import computer.lil.quilt.model.Identifier
 
 @Entity
 data class Blob(
-    @PrimaryKey @ColumnInfo(name = "id") val id: String,
+    @PrimaryKey @ColumnInfo(name = "id") val id: Identifier,
     @ColumnInfo(name = "distance") val distance: Int,
     @ColumnInfo(name = "size") val size: Long,
     @ColumnInfo(name = "location") val location: Uri

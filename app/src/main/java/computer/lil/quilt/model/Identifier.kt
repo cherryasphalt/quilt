@@ -12,6 +12,7 @@ class Identifier(
         private const val IDENTIFER_REGEX = "([@%&])([a-zA-Z0-9+/]*={0,3})(\\.)(\\w)+"
 
         @TypeConverter
+        @JvmStatic
         fun fromString(from: String): Identifier? {
             val regex = Regex(IDENTIFER_REGEX)
             if (from.length < 4 || regex.matchEntire(from) == null)
@@ -29,6 +30,7 @@ class Identifier(
         }
 
         @TypeConverter
+        @JvmStatic
         fun toString(identifier: Identifier): String {
             return identifier.toString()
         }
@@ -55,7 +57,7 @@ class Identifier(
     }
 
     override fun toString(): String {
-        return "${type.symbol}$keyHash.$algorithm"
+        return "${type.symbol}$keyHash.${algorithm.algo}"
     }
 
     override fun equals(other: Any?): Boolean {
