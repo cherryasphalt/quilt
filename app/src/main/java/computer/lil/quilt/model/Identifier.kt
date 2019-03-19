@@ -73,7 +73,7 @@ class Identifier(
         return result
     }
 
-    class IdentifierJsonAdapter() {
+    class IdentifierJsonAdapter {
         @FromJson
         fun fromJson(from: String): Identifier {
             return fromString(from)!!

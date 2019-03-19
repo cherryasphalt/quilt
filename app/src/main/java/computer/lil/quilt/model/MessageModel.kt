@@ -4,7 +4,7 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class MessageModel(
-    var previous: String?,
+    var previous: Identifier?,
     var author: Identifier,
     var sequence: Int,
     var timestamp: Long,

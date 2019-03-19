@@ -12,18 +12,25 @@ class ContentTest {
     @Test
     fun testContentParsing() {
         val toParse = "{\n" +
-                "  \"previous\": null,\n" +
-                "  \"author\": \"@FCX/tsDLpubCPKKfIrw4gc+SQkHcaD17s7GI6i/ziWY=.ed25519\",\n" +
-                "  \"sequence\": 1,\n" +
-                "  \"timestamp\": 1514517067954,\n" +
-                "  \"hash\": \"sha256\",\n" +
-                "  \"content\": {\n" +
-                "    \"type\": \"post\",\n" +
-                "    \"text\": \"This is the first post!\"\n" +
-                "  },\n" +
-                "  \"signature\": \"QYOR/zU9dxE1aKBaxc3C0DJ4gRyZtlMfPLt+CGJcY73sv5abKKKxr1SqhOvnm8TY784VHE8kZHCD8RdzFl1tBA==.sig.ed25519\"\n" +
-                "}"
-
+                "    \"previous\": \"%O3I3w1pUZqCh1/DxoO/fGYdpn2nYnth+OqXHwdOodUg=.sha256\",\n" +
+                "    \"author\": \"@EMovhfIrFk4NihAKnRNhrfRaqIhBv1Wj8pTxJNgvCCY=.ed25519\",\n" +
+                "    \"sequence\": 35,\n" +
+                "    \"timestamp\": 1449202158507,\n" +
+                "    \"hash\": \"sha256\",\n" +
+                "    \"content\": {\n" +
+                "      \"type\": \"post\",\n" +
+                "      \"text\": \"@cel would tabs be an easier way to do this? shift+click on a link to open a tab?\",\n" +
+                "      \"root\": \"%yAvDwopppOmCXAU5xj5KOuLkuYp+CkUicmEJbgJVrbo=.sha256\",\n" +
+                "      \"branch\": \"%LQQ53cFB816iAbayxwuLjVLmuCwt1J2erfMge4chSC4=.sha256\",\n" +
+                "      \"mentions\": [\n" +
+                "        {\n" +
+                "          \"link\": \"@f/6sQ6d2CMxRUhLpspgGIulDxDCwYD7DzFzPNr7u5AU=.ed25519\",\n" +
+                "          \"name\": \"cel\"\n" +
+                "        }\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    \"signature\": \"Go98D7qqvvtaGkGPPttBcHsIuTF+s3FmV5ChNWAhifpdlN9UkmkUd39GQaqDUgs9T0bkXgZByLsdZ31MH5tMBQ==.sig.ed25519\"\n" +
+                "  }"
 
         val moshi = Moshi.Builder()
             .add(Identifier.IdentifierJsonAdapter())
@@ -35,11 +42,15 @@ class ContentTest {
             ).build()
         val message = moshi.adapter(MessageModel::class.java).fromJson(toParse)
         Assert.assertTrue(message?.content is Content.Post)
-        Assert.assertEquals((message?.content as Content.Post).text, "This is the first post!")
-        Assert.assertEquals(message.sequence, 1)
-        Assert.assertEquals(message.timestamp, 1514517067954)
+
+        Assert.assertEquals((message?.content as Content.Post).text, "@cel would tabs be an easier way to do this? shift+click on a link to open a tab?")
+        Assert.assertEquals((message.content as Content.Post).root, Identifier.fromString("%yAvDwopppOmCXAU5xj5KOuLkuYp+CkUicmEJbgJVrbo=.sha256"))
+        Assert.assertEquals((message.content as Content.Post).branch, Identifier.fromString("%LQQ53cFB816iAbayxwuLjVLmuCwt1J2erfMge4chSC4=.sha256"))
+
+        Assert.assertEquals(message.sequence, 35)
+        Assert.assertEquals(message.timestamp, 1449202158507)
         Assert.assertEquals(message.hash, "sha256")
-        Assert.assertEquals(message.author, Identifier.fromString("@FCX/tsDLpubCPKKfIrw4gc+SQkHcaD17s7GI6i/ziWY=.ed25519"))
-        Assert.assertEquals(message.signature, "QYOR/zU9dxE1aKBaxc3C0DJ4gRyZtlMfPLt+CGJcY73sv5abKKKxr1SqhOvnm8TY784VHE8kZHCD8RdzFl1tBA==.sig.ed25519")
+        Assert.assertEquals(message.author, Identifier.fromString("@EMovhfIrFk4NihAKnRNhrfRaqIhBv1Wj8pTxJNgvCCY=.ed25519"))
+        Assert.assertEquals(message.signature, "Go98D7qqvvtaGkGPPttBcHsIuTF+s3FmV5ChNWAhifpdlN9UkmkUd39GQaqDUgs9T0bkXgZByLsdZ31MH5tMBQ==.sig.ed25519")
     }
 }

@@ -6,13 +6,14 @@ interface Content {
     @JsonClass(generateAdapter = true)
     data class Post(
         val text: String,
-        val root: String?,
-        val branch: List<String>?,
-        val mentions: List<Mention>?
+        val root: Identifier?,
+        val branch: Identifier?,
+        val mentions: List<Mention>?,
+        val channel: String?
     ): Content {
         @JsonClass(generateAdapter = true)
         data class Mention(
-            val link: String,
+            val link: Identifier,
             val name: String
         )
     }
@@ -31,7 +32,7 @@ interface Content {
 
     @JsonClass(generateAdapter = true)
     data class Contact(
-        val contact: String,
+        val contact: Identifier,
         val following: Boolean
     ) : Content
 
