@@ -34,6 +34,6 @@ class InviteCode(
     }
 
     fun getInviteCode(): String {
-        return "$host:$port:${pubKey.getIdentifierString()}~$inviteKey"
+        return "$host:$port:${pubKey.toString()}~$inviteKey"
     }
 }

@@ -5,7 +5,6 @@ import android.util.Base64
 import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.interfaces.Hash
-import com.squareup.moshi.Json
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
@@ -56,7 +55,7 @@ class ProtocolModel {
             val jsonMessage = adapter.toJson(message).toByteArray()
             ls.cryptoHashSha256(idByteArray, jsonMessage, jsonMessage.size.toLong())
             val id = Base64.encodeToString(idByteArray, Base64.DEFAULT)
-            return "%$id.sha256"
+            return Identifier(id, Identifier.AlgoType.SHA256, Identifier.IdentityType.MESSAGE).toString()
         }
     }
 

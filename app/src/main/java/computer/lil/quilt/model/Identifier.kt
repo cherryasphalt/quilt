@@ -1,15 +1,17 @@
 package computer.lil.quilt.model
 
-import java.sql.Types
+import androidx.room.TypeConverter
+import com.squareup.moshi.*
 
 class Identifier(
     val keyHash: String,
-    val algorithm: String,
+    val algorithm: AlgoType,
     val type: IdentityType
 ) {
     companion object {
         private const val IDENTIFER_REGEX = "([@%&])([a-zA-Z0-9+/]*={0,3})(\\.)(\\w)+"
 
+        @TypeConverter
         fun fromString(from: String): Identifier? {
             val regex = Regex(IDENTIFER_REGEX)
             if (from.length < 4 || regex.matchEntire(from) == null)
@@ -19,10 +21,16 @@ class Identifier(
             val algoRegex = Regex("([@%&])([a-zA-Z0-9+/]*={0,3})(\\.)")
 
             val split = algoRegex.split(from, 2)
-            val algo = split[1]
-            val keyHash = from.substring(1 until (from.length - 1 - algo.length))
+            AlgoType.fromString(split[1])?.let { algo ->
+                val keyHash = from.substring(1 until (from.length - 1 - algo.algo.length))
+                return Identifier(keyHash, algo, type)
+            }
+            return null
+        }
 
-            return Identifier(keyHash, algo, type)
+        @TypeConverter
+        fun toString(identifier: Identifier): String {
+            return identifier.toString()
         }
     }
 
@@ -37,11 +45,44 @@ class Identifier(
     }
 
     enum class AlgoType(val algo: String) {
-        SHA256("SHA256"),
-        ED25519("ED25519")
+        SHA256("sha256"),
+        ED25519("ed25519");
+
+        companion object {
+            private val map = AlgoType.values().associateBy(AlgoType::algo)
+            fun fromString(type: String) = map[type]
+        }
     }
 
-    fun getIdentifierString(): String {
+    override fun toString(): String {
         return "${type.symbol}$keyHash.$algorithm"
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return other != null
+            && other is Identifier
+            && keyHash == other.keyHash
+            && algorithm == other.algorithm
+            && type == other.type
+    }
+
+    override fun hashCode(): Int {
+        var result = keyHash.hashCode()
+        result = 31 * result + algorithm.hashCode()
+        result = 31 * result + type.hashCode()
+        return result
+    }
+
+    class IdentifierJsonAdapter() {
+        @FromJson
+        fun fromJson(from: String): Identifier {
+            return fromString(from)!!
+        }
+
+        @ToJson
+        fun toJson(value: Identifier): String {
+            return value.toString()
+        }
+
     }
 }
