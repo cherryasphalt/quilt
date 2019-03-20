@@ -4,7 +4,6 @@ import android.util.Log
 import com.squareup.moshi.Moshi
 import computer.lil.quilt.identity.IdentityHandler
 import computer.lil.quilt.model.InviteCode
-import computer.lil.quilt.model.RPCJsonAdapterFactory
 import computer.lil.quilt.model.RPCMessage
 import computer.lil.quilt.model.RPCRequest
 import computer.lil.quilt.protocol.BoxStream
@@ -18,11 +17,9 @@ import okio.*
 import java.io.Closeable
 import java.io.IOException
 import java.net.Socket
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, remoteKey: ByteArray) {
-
+class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, remoteKey: ByteArray, val moshi: Moshi) {
     private val clientHandshake = ClientHandshake(identityHandler, remoteKey, networkId)
     var socket: Socket? = null
     var source: BufferedSource? = null
@@ -127,7 +124,6 @@ class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, rem
             )
         )
 
-        val moshi = Moshi.Builder().add(RPCJsonAdapterFactory()).build()
         val jsonAdapter = moshi.adapter(RPCRequest.RequestCreateHistoryStream::class.java)
         val payload = jsonAdapter.toJson(createHistoryStream).toByteArray()
 

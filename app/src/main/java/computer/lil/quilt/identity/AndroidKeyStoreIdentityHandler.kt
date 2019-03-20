@@ -73,7 +73,7 @@ class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
 
                     //Encrypt private key
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        createAESKeystoreKey(context)
+                        createAESKeystoreKey()
                         val cipher = Cipher.getInstance(AES_MODE)
                         cipher.init(Cipher.ENCRYPT_MODE, getAesKey())
                         val encryptedKey = cipher.doFinal(keyPair.secretKey.asBytes)
@@ -184,7 +184,7 @@ class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    fun createAESKeystoreKey(context: Context) {
+    fun createAESKeystoreKey() {
         val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, PROVIDER_KEYSTORE)
         keyGenerator.init(
             KeyGenParameterSpec.Builder(ALIAS_IDENTITY_KEYSTORE, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)

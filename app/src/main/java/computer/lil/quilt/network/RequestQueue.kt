@@ -9,7 +9,7 @@ import computer.lil.quilt.protocol.ProtocolException
 import computer.lil.quilt.protocol.RPCProtocol
 import kotlin.reflect.jvm.internal.impl.protobuf.ByteString
 
-class RequestQueue {
+class RequestQueue(val moshi: Moshi) {
     private val queue = mutableListOf<Pair<Int, RPCRequest>>()
     private val requestNumberSet = mutableSetOf<Int>()
 
@@ -67,8 +67,6 @@ class RequestQueue {
 
     private fun refuseRequest(requestNumber: Int, connection: PeerConnection) {
         //Retrieve wants
-        val moshi = Moshi.Builder().add(RPCJsonAdapterFactory()).build()
-
         val payload = "{}".toByteArray()
         val response = RPCMessage(
             true,
@@ -82,7 +80,6 @@ class RequestQueue {
     }
 
     private fun endStream(requestNumber: Int, connection: PeerConnection) {
-        val moshi = Moshi.Builder().add(RPCJsonAdapterFactory()).build()
         val jsonAdapter = moshi.adapter(Boolean::class.java)
 
         val payload2 = jsonAdapter.toJson(true).toByteArray()

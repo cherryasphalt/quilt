@@ -39,11 +39,11 @@ class BoxStream(
     }
 
     fun readFromClient(message: ByteArray): ByteArray {
-        return decryptMessage(message, clientToServerKey!!, clientToServerNonce)
+        return decryptMessage(message, clientToServerKey, clientToServerNonce)
     }
 
     fun sendToServer(message: ByteArray): ByteArray {
-        return encryptMessage(message, clientToServerKey!!, clientToServerNonce)
+        return encryptMessage(message, clientToServerKey, clientToServerNonce)
     }
 
     fun readFromServer(message: ByteArray): ByteArray {
