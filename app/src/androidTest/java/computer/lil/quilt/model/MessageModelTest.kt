@@ -8,6 +8,7 @@ import computer.lil.quilt.identity.BasicIdentityHandler
 import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.*
 
 @RunWith(AndroidJUnit4::class)
 class MessageModelTest {
@@ -22,30 +23,40 @@ class MessageModelTest {
         ).build()
 
     @Test
-    fun testParsing() {
+    fun testContentParsing() {
         val toParse = "{\n" +
-                "  \"previous\": \"%LFvIU/dFLvskkukxeBQ3Y7NSo34aPBESNe+IXczWvSI=.sha256\",\n" +
-                "  \"author\": \"@EMovhfIrFk4NihAKnRNhrfRaqIhBv1Wj8pTxJNgvCCY=.ed25519\",\n" +
-                "  \"sequence\": 3,\n" +
-                "  \"timestamp\": 1449201683943,\n" +
-                "  \"hash\": \"sha256\",\n" +
-                "  \"content\": {\n" +
-                "    \"type\": \"pub\",\n" +
-                "    \"address\": {\n" +
-                "      \"host\": \"188.166.252.233\",\n" +
-                "      \"port\": 8008,\n" +
-                "      \"key\": \"@uRECWB4KIeKoNMis2UYWyB2aQPvWmS3OePQvBj2zClg=.ed25519\"\n" +
-                "    }\n" +
-                "  },\n" +
-                "  \"signature\": \"S+tNRWv5D57ElrF1X6ZsPH9x4Ga5yiyznVpRukhN1sUk1VM353nohQMe+Axe4BHuUw+W9aP6A5W29EdXqOGfCg==.sig.ed25519\"\n" +
-                "}"
+                "    \"previous\": \"%O3I3w1pUZqCh1/DxoO/fGYdpn2nYnth+OqXHwdOodUg=.sha256\",\n" +
+                "    \"author\": \"@EMovhfIrFk4NihAKnRNhrfRaqIhBv1Wj8pTxJNgvCCY=.ed25519\",\n" +
+                "    \"sequence\": 35,\n" +
+                "    \"timestamp\": 1449202158507,\n" +
+                "    \"hash\": \"sha256\",\n" +
+                "    \"content\": {\n" +
+                "      \"type\": \"post\",\n" +
+                "      \"text\": \"@cel would tabs be an easier way to do this? shift+click on a link to open a tab?\",\n" +
+                "      \"root\": \"%yAvDwopppOmCXAU5xj5KOuLkuYp+CkUicmEJbgJVrbo=.sha256\",\n" +
+                "      \"branch\": \"%LQQ53cFB816iAbayxwuLjVLmuCwt1J2erfMge4chSC4=.sha256\",\n" +
+                "      \"mentions\": [\n" +
+                "        {\n" +
+                "          \"link\": \"@f/6sQ6d2CMxRUhLpspgGIulDxDCwYD7DzFzPNr7u5AU=.ed25519\",\n" +
+                "          \"name\": \"cel\"\n" +
+                "        }\n" +
+                "      ]\n" +
+                "    },\n" +
+                "    \"signature\": \"Go98D7qqvvtaGkGPPttBcHsIuTF+s3FmV5ChNWAhifpdlN9UkmkUd39GQaqDUgs9T0bkXgZByLsdZ31MH5tMBQ==.sig.ed25519\"\n" +
+                "  }"
 
-        val adapter = moshi.adapter(MessageModel::class.java)
-        val message = adapter.fromJson(toParse)
+        val message = moshi.adapter(MessageModel::class.java).fromJson(toParse)
+        Assert.assertTrue(message?.content is Content.Post)
 
-        val identityHandler = BasicIdentityHandler.createWithGeneratedKeys()
-        message?.generateSignature(moshi, identityHandler)
-        val newJson = adapter.toJson(message)
+        Assert.assertEquals((message?.content as Content.Post).text, "@cel would tabs be an easier way to do this? shift+click on a link to open a tab?")
+        Assert.assertEquals((message.content as Content.Post).root, Identifier.fromString("%yAvDwopppOmCXAU5xj5KOuLkuYp+CkUicmEJbgJVrbo=.sha256"))
+        Assert.assertEquals((message.content as Content.Post).branch, Identifier.fromString("%LQQ53cFB816iAbayxwuLjVLmuCwt1J2erfMge4chSC4=.sha256"))
+
+        Assert.assertEquals(message.sequence, 35)
+        Assert.assertEquals(message.timestamp, Date(1449202158507))
+        Assert.assertEquals(message.hash, "sha256")
+        Assert.assertEquals(message.author, Identifier.fromString("@EMovhfIrFk4NihAKnRNhrfRaqIhBv1Wj8pTxJNgvCCY=.ed25519"))
+        Assert.assertEquals(message.signature, "Go98D7qqvvtaGkGPPttBcHsIuTF+s3FmV5ChNWAhifpdlN9UkmkUd39GQaqDUgs9T0bkXgZByLsdZ31MH5tMBQ==.sig.ed25519")
     }
 
     @Test
@@ -64,12 +75,15 @@ class MessageModelTest {
                 "}"
 
         val adapter = moshi.adapter(MessageModel::class.java)
-        val message = adapter.fromJson(toParse)
+        val newMessage = adapter.fromJson(toParse)?.let { message ->
+            val identityHandler = BasicIdentityHandler(
+                Base64.decode("zgThI3hlrpVWAISAdknwgz2l8KoT1v6V6v3bdZZ11jM=", Base64.DEFAULT),
+                Base64.decode("/P+IqmkRzG8N6OsvkhmkRGlzgg0yYWMnp6KqoNQ9qdjOBOEjeGWulVYAhIB2SfCDPaXwqhPW/pXq/dt1lnXWMw==", Base64.DEFAULT))
+            MessageModel(
+                message.previous, message.sequence, message.author, message.timestamp, message.hash, message.content,
+                moshi, identityHandler)
+        }
 
-        val identityHandler = BasicIdentityHandler(
-            Base64.decode("zgThI3hlrpVWAISAdknwgz2l8KoT1v6V6v3bdZZ11jM=", Base64.DEFAULT),
-            Base64.decode("/P+IqmkRzG8N6OsvkhmkRGlzgg0yYWMnp6KqoNQ9qdjOBOEjeGWulVYAhIB2SfCDPaXwqhPW/pXq/dt1lnXWMw==", Base64.DEFAULT))
-        message?.generateSignature(moshi, identityHandler)
-        Assert.assertEquals(message?.signature, "4RBCI5QEtJiiKy0JU1vFxJhEg8EVwhrbtCp1xTFivA6odNI7XsaP/A3prKnf1+ZbBQpDOjSiMtvLNZxc2VdxDw==.sig.ed25519")
+        Assert.assertEquals(newMessage?.signature, "4RBCI5QEtJiiKy0JU1vFxJhEg8EVwhrbtCp1xTFivA6odNI7XsaP/A3prKnf1+ZbBQpDOjSiMtvLNZxc2VdxDw==.sig.ed25519")
     }
 }
