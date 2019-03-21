@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.squareup.moshi.Moshi
-import computer.lil.quilt.database.SSBDatabase
+import computer.lil.quilt.database.QuiltDatabase
 import computer.lil.quilt.identity.IdentityHandler
 import computer.lil.quilt.injection.DaggerDataComponent
 import computer.lil.quilt.injection.DataModule
@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
     var clientSubs = CompositeDisposable()
 
     @Inject lateinit var identityHandler: IdentityHandler
-    @Inject lateinit var db: SSBDatabase
+    @Inject lateinit var db: QuiltDatabase
     @Inject lateinit var moshi: Moshi
 
     override fun onCreate(savedInstanceState: Bundle?) {

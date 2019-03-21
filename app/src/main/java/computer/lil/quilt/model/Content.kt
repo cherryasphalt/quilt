@@ -2,15 +2,18 @@ package computer.lil.quilt.model
 
 import com.squareup.moshi.JsonClass
 
-interface Content {
+open class Content(
+    open val type: String?
+) {
     @JsonClass(generateAdapter = true)
     data class Post(
+        override val type: String,
         val text: String,
         val root: Identifier?,
         val branch: Identifier?,
         val mentions: List<Mention>?,
         val channel: String?
-    ): Content {
+    ): Content(type) {
         @JsonClass(generateAdapter = true)
         data class Mention(
             val link: Identifier,
@@ -20,8 +23,9 @@ interface Content {
 
     @JsonClass(generateAdapter = true)
     data class Pub(
+        override val type: String,
         val address: Address
-    ): Content {
+    ): Content(type) {
         @JsonClass(generateAdapter = true)
         data class Address(
             val host: String,
@@ -32,12 +36,13 @@ interface Content {
 
     @JsonClass(generateAdapter = true)
     data class Contact(
+        override val type: String,
         val contact: Identifier,
         val following: Boolean
-    ) : Content
+    ) : Content(type)
 
     @JsonClass(generateAdapter = true)
     data class PrivateMessage(
         val box: String
-    ) : Content
+    ) : Content(null)
 }

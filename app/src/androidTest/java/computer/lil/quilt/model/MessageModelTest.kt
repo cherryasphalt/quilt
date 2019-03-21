@@ -49,6 +49,7 @@ class MessageModelTest {
         Assert.assertTrue(message?.content is Content.Post)
 
         Assert.assertEquals((message?.content as Content.Post).text, "@cel would tabs be an easier way to do this? shift+click on a link to open a tab?")
+        Assert.assertEquals(message.content.type, "post")
         Assert.assertEquals((message.content as Content.Post).root, Identifier.fromString("%yAvDwopppOmCXAU5xj5KOuLkuYp+CkUicmEJbgJVrbo=.sha256"))
         Assert.assertEquals((message.content as Content.Post).branch, Identifier.fromString("%LQQ53cFB816iAbayxwuLjVLmuCwt1J2erfMge4chSC4=.sha256"))
 

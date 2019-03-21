@@ -7,17 +7,19 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import android.os.AsyncTask
 import androidx.room.Room
 import androidx.room.TypeConverters
+import computer.lil.quilt.database.content.post.Mention
+import computer.lil.quilt.database.content.post.MentionDao
 import computer.lil.quilt.model.Identifier
 import computer.lil.quilt.util.SingletonHolder
 
-@Database(entities = [Message::class, Feed::class, Blob::class], version = 1)
+@Database(entities = [Message::class, Feed::class, Blob::class, Mention::class], version = 1)
 @TypeConverters(DBTypeConverter::class, Identifier::class)
-abstract class SSBDatabase: RoomDatabase() {
-    companion object: SingletonHolder<SSBDatabase, Context>({
+abstract class QuiltDatabase: RoomDatabase() {
+    companion object: SingletonHolder<QuiltDatabase, Context>({
         Room.databaseBuilder(
             it,
-            SSBDatabase::class.java,
-            "ssb_database"
+            QuiltDatabase::class.java,
+            "quilt_database"
         )
         .addCallback(object : RoomDatabase.Callback() {
             override fun onOpen(db: SupportSQLiteDatabase) {
@@ -29,6 +31,7 @@ abstract class SSBDatabase: RoomDatabase() {
     })
 
     abstract fun messageDao(): MessageDao
+    abstract fun mentionDao(): MentionDao
 
     private class PopulateDbAsync internal constructor(context: Context) : AsyncTask<Void, Void, Void>() {
         private val mDao: MessageDao
