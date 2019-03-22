@@ -3,21 +3,21 @@ package computer.lil.quilt
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import com.squareup.moshi.Moshi
 import computer.lil.quilt.database.QuiltDatabase
 import computer.lil.quilt.identity.IdentityHandler
 import computer.lil.quilt.injection.DaggerDataComponent
 import computer.lil.quilt.injection.DataModule
 import computer.lil.quilt.network.PeerConnection
-import computer.lil.quilt.network.RequestQueue
-import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
 import okio.ByteString.Companion.decodeHex
 import javax.inject.Inject
-import kotlin.reflect.jvm.internal.impl.protobuf.ByteString
+import androidx.fragment.app.FragmentStatePagerAdapter
+import computer.lil.quilt.ui.FeedFragment
+
 
 class MainActivity : AppCompatActivity() {
     var clientSubs = CompositeDisposable()
@@ -40,7 +40,10 @@ class MainActivity : AppCompatActivity() {
 
         Log.d("current id", identityHandler.getIdentityString())
 
-        btn_retry.setOnClickListener {
+        pager.adapter = TabsAdapter(supportFragmentManager)
+
+
+        /*btn_retry.setOnClickListener {
             clientSubs.add(connection.connectToPeer("10.0.2.2", 8008)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -69,11 +72,24 @@ class MainActivity : AppCompatActivity() {
                         )
                     }
                 })
-        }
+        }*/
     }
 
     override fun onStop() {
         clientSubs.dispose()
         super.onStop()
+    }
+}
+
+class TabsAdapter(fm: FragmentManager) : FragmentStatePagerAdapter(fm) {
+    override fun getCount(): Int {
+        return 1
+    }
+
+    override fun getItem(position: Int): Fragment {
+        return when (position) {
+            0 -> FeedFragment()
+            else -> FeedFragment()
+        }
     }
 }
