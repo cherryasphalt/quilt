@@ -62,7 +62,7 @@ class MainActivity : AppCompatActivity() {
 
         pager.adapter = TabsAdapter(supportFragmentManager)
 
-        navigation.setOnNavigationItemSelectedListener(onNavigationItemSelectedListener)
+        //navigation.setOnNavigationItemSelectedListener(onNavigationItemSelectedListener)
 
         /*btn_retry.setOnClickListener {
             clientSubs.add(connection.connectToPeer("10.0.2.2", 8008)
