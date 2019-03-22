@@ -1,5 +1,6 @@
 package computer.lil.quilt.identity
 
+import computer.lil.quilt.model.Identifier
 import java.lang.Exception
 import java.nio.charset.Charset
 
@@ -12,4 +13,5 @@ interface IdentityHandler {
     fun signUsingIdentity(message: ByteArray): ByteArray
     fun signUsingIdentity(message: String, charset: Charset = Charsets.UTF_8): ByteArray
     fun keyExchangeUsingIdentitySecret(exchangePublicKey: ByteArray): ByteArray
+    fun getIdentifier(): Identifier
 }

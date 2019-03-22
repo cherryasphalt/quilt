@@ -1,18 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools">
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
     <data>
         <variable name="message" type="computer.lil.quilt.database.Message"/>
     </data>
-    <LinearLayout
-                  android:orientation="vertical"
-                  android:layout_width="match_parent"
-                  android:layout_height="match_parent">
+    <androidx.constraintlayout.widget.ConstraintLayout
+          android:orientation="vertical"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:layout_margin="@dimen/space_small"
+          android:background="@color/colorAccent">
+        <ImageView
+            android:id="@+id/image_profile"
+            android:layout_width="@dimen/profile_image_size"
+            android:layout_height="@dimen/profile_image_size"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:contentDescription="@string/image_profile_content_description"/>
         <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@{message.author.toString()}"/>
-    </LinearLayout>
+            android:id="@+id/text_author_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toEndOf="@id/image_profile"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:textAppearance="@style/h6"
+            android:text="hello"/>
+        <TextView
+            android:id="@+id/text_author_id"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@{message.author.toString()}"
+            android:singleLine="true"
+            android:textSize="12sp"
+            app:layout_constraintTop_toBottomOf="@id/text_author_name"
+            app:layout_constraintStart_toEndOf="@id/image_profile"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:textAppearance="@style/subtitle"/>
+        <TextView
+            android:id="@+id/text_post_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/text_author_id"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:text="@{message.content.type.equals(`post`) ? message.content.post.text : null}"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

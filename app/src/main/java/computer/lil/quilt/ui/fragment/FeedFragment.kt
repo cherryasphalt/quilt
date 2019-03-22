@@ -1,7 +1,5 @@
-package computer.lil.quilt.ui
+package computer.lil.quilt.ui.fragment
 
-import android.content.Context
-import android.net.Uri
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -20,10 +18,6 @@ import kotlinx.android.synthetic.main.fragment_feed.view.*
 class FeedFragment : Fragment() {
     private lateinit var messagesViewModel: MessagesViewModel
     val adapter = FeedAdapter()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,

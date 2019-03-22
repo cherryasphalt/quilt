@@ -16,8 +16,10 @@ import kotlinx.android.synthetic.main.activity_main.*
 import okio.ByteString.Companion.decodeHex
 import javax.inject.Inject
 import androidx.fragment.app.FragmentStatePagerAdapter
-import computer.lil.quilt.ui.FeedFragment
-
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import computer.lil.quilt.ui.fragment.FeedFragment
+import computer.lil.quilt.ui.fragment.MentionsFragment
+import computer.lil.quilt.ui.fragment.ProfileFragment
 
 class MainActivity : AppCompatActivity() {
     var clientSubs = CompositeDisposable()
@@ -25,6 +27,24 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var identityHandler: IdentityHandler
     @Inject lateinit var db: QuiltDatabase
     @Inject lateinit var moshi: Moshi
+
+    private val onNavigationItemSelectedListener = BottomNavigationView.OnNavigationItemSelectedListener { item ->
+        when (item.itemId) {
+            R.id.navigation_home -> {
+                pager.currentItem = 0
+                return@OnNavigationItemSelectedListener true
+            }
+            R.id.navigation_mentions -> {
+                pager.currentItem = 1
+                return@OnNavigationItemSelectedListener true
+            }
+            R.id.navigation_profile -> {
+                pager.currentItem = 2
+                return@OnNavigationItemSelectedListener true
+            }
+        }
+        false
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +62,7 @@ class MainActivity : AppCompatActivity() {
 
         pager.adapter = TabsAdapter(supportFragmentManager)
 
+        navigation.setOnNavigationItemSelectedListener(onNavigationItemSelectedListener)
 
         /*btn_retry.setOnClickListener {
             clientSubs.add(connection.connectToPeer("10.0.2.2", 8008)
@@ -83,12 +104,14 @@ class MainActivity : AppCompatActivity() {
 
 class TabsAdapter(fm: FragmentManager) : FragmentStatePagerAdapter(fm) {
     override fun getCount(): Int {
-        return 1
+        return 3
     }
 
     override fun getItem(position: Int): Fragment {
         return when (position) {
             0 -> FeedFragment()
+            1 -> MentionsFragment()
+            2 -> ProfileFragment()
             else -> FeedFragment()
         }
     }

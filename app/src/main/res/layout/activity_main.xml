@@ -15,9 +15,21 @@
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent">
         <fragment
-                android:name="computer.lil.quilt.ui.FeedFragment"
+                android:name="computer.lil.quilt.ui.fragment.FeedFragment"
                 android:id="@+id/fragment_feed"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"/>
     </androidx.viewpager.widget.ViewPager>
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/navigation"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="0dp"
+            android:layout_marginStart="0dp"
+            android:background="?android:attr/windowBackground"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:menu="@menu/navigation"/>
 </androidx.constraintlayout.widget.ConstraintLayout>

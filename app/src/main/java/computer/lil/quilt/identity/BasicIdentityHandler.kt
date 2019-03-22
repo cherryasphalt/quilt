@@ -1,11 +1,13 @@
 package computer.lil.quilt.identity
 
+import android.util.Base64
 import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.exceptions.SodiumException
 import com.goterl.lazycode.lazysodium.interfaces.Sign
 import com.goterl.lazycode.lazysodium.utils.Key
 import com.goterl.lazycode.lazysodium.utils.KeyPair
+import computer.lil.quilt.model.Identifier
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
@@ -45,8 +47,12 @@ class BasicIdentityHandler(): IdentityHandler {
         throw IdentityHandler.IdentityException("Identity not found.")
     }
 
+    override fun getIdentifier(): Identifier {
+        return Identifier(Base64.encodeToString(getIdentityPublicKey(), Base64.NO_WRAP), Identifier.AlgoType.ED25519, Identifier.IdentityType.IDENTITY)
+    }
+
     override fun getIdentityString(): String {
-        return "@${getIdentityPublicKey()}.$KEY_ALGO"
+        return "@${Base64.encodeToString(getIdentityPublicKey(), Base64.NO_WRAP)}.$KEY_ALGO"
     }
 
     override fun signUsingIdentity(message: ByteArray): ByteArray {

@@ -12,6 +12,7 @@ import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.interfaces.Sign
 import com.goterl.lazycode.lazysodium.utils.Key
 import computer.lil.quilt.BuildConfig
+import computer.lil.quilt.model.Identifier
 import java.lang.ref.WeakReference
 import java.math.BigInteger
 import java.nio.charset.Charset
@@ -119,6 +120,16 @@ class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
         ls.cryptoSignDetached(signature, signatureLength, message, message.size.toLong(), decryptPrivateKey())
 
         return signature.sliceArray(0 until signatureLength[0].toInt())
+    }
+
+    override fun getIdentifier(): Identifier {
+        contextRef.get()?.run {
+            val pref = getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE)
+            pref.getString(PREF_IDENTITY_PUBLIC_KEY, null)?.let { publicKeyString ->
+                return Identifier(publicKeyString, Identifier.AlgoType.ED25519, Identifier.IdentityType.IDENTITY)
+            }
+        }
+        throw IdentityHandler.IdentityException("Identity not found.")
     }
 
     override fun getIdentityString(): String {
