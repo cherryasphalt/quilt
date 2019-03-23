@@ -7,12 +7,12 @@ open class Content(
 ) {
     @JsonClass(generateAdapter = true)
     data class Post(
-        override val type: String,
+        override val type: String = "post",
         val text: String,
-        val root: Identifier?,
-        val branch: Identifier?,
-        val mentions: List<Mention>?,
-        val channel: String?
+        val root: Identifier? = null,
+        val branch: Identifier? = null,
+        val mentions: List<Mention>? = null,
+        val channel: String? = null
     ): Content(type) {
         @JsonClass(generateAdapter = true)
         data class Mention(
@@ -23,7 +23,7 @@ open class Content(
 
     @JsonClass(generateAdapter = true)
     data class Pub(
-        override val type: String,
+        override val type: String = "pub",
         val address: Address
     ): Content(type) {
         @JsonClass(generateAdapter = true)
@@ -36,7 +36,7 @@ open class Content(
 
     @JsonClass(generateAdapter = true)
     data class Contact(
-        override val type: String,
+        override val type: String = "contact",
         val contact: Identifier,
         val following: Boolean
     ) : Content(type)

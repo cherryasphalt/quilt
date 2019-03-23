@@ -31,8 +31,8 @@ class Identifier(
 
         @TypeConverter
         @JvmStatic
-        fun toString(identifier: Identifier): String {
-            return identifier.toString()
+        fun toString(identifier: Identifier?): String {
+            return identifier?.toString() ?: "null"
         }
     }
 

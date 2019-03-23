@@ -26,9 +26,9 @@ import javax.security.auth.x500.X500Principal
 
 class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
     companion object {
-        private const val SHARED_PREF_NAME = BuildConfig.APPLICATION_ID + ".PREFERENCE"
+        const val SHARED_PREF_NAME = BuildConfig.APPLICATION_ID + ".PREFERENCE"
 
-        private const val PREF_IDENTITY_PUBLIC_KEY = "PREF_IDENTITY_PUBLIC_KEY"
+        const val PREF_IDENTITY_PUBLIC_KEY = "PREF_IDENTITY_PUBLIC_KEY"
         private const val PREF_IDENTITY_ENCRYPTED_PRIVATE_KEY = "PREF_IDENTITY_ENCRYPTED_PRIVATE_KEY"
         private const val PREF_IDENTITY_ALGORITHM = "PREF_IDENTITY_ALGORITHM"
         private const val PREF_IDENTITY_KEYSTORE_ALGO = "PREF_IDENTITY_KEYSTORE_ALGO"

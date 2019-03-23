@@ -1,5 +1,6 @@
 package computer.lil.quilt
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
@@ -28,24 +29,6 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var db: QuiltDatabase
     @Inject lateinit var moshi: Moshi
 
-    private val onNavigationItemSelectedListener = BottomNavigationView.OnNavigationItemSelectedListener { item ->
-        when (item.itemId) {
-            R.id.navigation_home -> {
-                pager.currentItem = 0
-                return@OnNavigationItemSelectedListener true
-            }
-            R.id.navigation_mentions -> {
-                pager.currentItem = 1
-                return@OnNavigationItemSelectedListener true
-            }
-            R.id.navigation_profile -> {
-                pager.currentItem = 2
-                return@OnNavigationItemSelectedListener true
-            }
-        }
-        false
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -60,9 +43,14 @@ class MainActivity : AppCompatActivity() {
 
         Log.d("current id", identityHandler.getIdentityString())
 
+        setSupportActionBar(bottom_bar)
         pager.adapter = TabsAdapter(supportFragmentManager)
 
-        //navigation.setOnNavigationItemSelectedListener(onNavigationItemSelectedListener)
+        fab.setOnClickListener {
+            val intent = Intent(this, ComposeActivity::class.java)
+            startActivity(intent)
+        }
+
 
         /*btn_retry.setOnClickListener {
             clientSubs.add(connection.connectToPeer("10.0.2.2", 8008)

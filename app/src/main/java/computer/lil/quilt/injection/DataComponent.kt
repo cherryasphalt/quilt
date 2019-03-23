@@ -1,8 +1,8 @@
 package computer.lil.quilt.injection
 
-import android.app.Application
+import computer.lil.quilt.ComposeActivity
 import computer.lil.quilt.MainActivity
-import computer.lil.quilt.data.repo.MessagesRepository
+import computer.lil.quilt.data.repo.MessageRepository
 import dagger.Component
 import javax.inject.Singleton
 
@@ -10,7 +10,8 @@ import javax.inject.Singleton
 @Component(modules = [DataModule::class])
 interface DataComponent {
     fun inject(activity: MainActivity)
-    fun inject(repo: MessagesRepository)
+    fun inject(repo: MessageRepository)
+    fun inject(activity: ComposeActivity)
 
     @Component.Builder
     interface Builder {

@@ -17,7 +17,7 @@ class MessageModel(
     var sequence: Int,
     var author: Identifier,
     var timestamp: Date,
-    var hash: String,
+    var hash: String = Identifier.AlgoType.SHA256.algo,
     val content: Content,
     var signature: String? = null
 ) {
@@ -26,7 +26,7 @@ class MessageModel(
         sequence: Int,
         author: Identifier,
         timestamp: Date,
-        hash: String,
+        hash: String = Identifier.AlgoType.SHA256.algo,
         content: Content,
         moshi: Moshi,
         identityHandler: IdentityHandler

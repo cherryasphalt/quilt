@@ -16,7 +16,7 @@ interface MessageDao {
     fun loadAllByIds(messageIds: IntArray): LiveData<List<Message>>
 
     @Query("SELECT * FROM messages WHERE author = :author ORDER BY sequence DESC LIMIT 1")
-    fun getRecentMessageFromAuthor(author: String): LiveData<Message>
+    fun getRecentMessageFromAuthor(author: String): Message?
 
     @Query("SELECT * FROM messages WHERE id = :id")
     fun findMessageById(id: Identifier): Message

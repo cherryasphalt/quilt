@@ -9,6 +9,7 @@ import androidx.room.Room
 import androidx.room.TypeConverters
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
+import computer.lil.quilt.data.repo.MessageRepository
 import computer.lil.quilt.database.content.post.Mention
 import computer.lil.quilt.database.content.post.MentionDao
 import computer.lil.quilt.model.Adapters
@@ -80,7 +81,7 @@ abstract class QuiltDatabase: RoomDatabase() {
                     "    \"signature\": \"Go98D7qqvvtaGkGPPttBcHsIuTF+s3FmV5ChNWAhifpdlN9UkmkUd39GQaqDUgs9T0bkXgZByLsdZ31MH5tMBQ==.sig.ed25519\"\n" +
                     "  }"
             moshi.adapter(MessageModel::class.java).fromJson(toParse)?.let {
-                    MessageConverter.insertNetworkMessage(it, messageDao, mentionDao)
+                    MessageRepository.insertNetworkMessage(it, messageDao, mentionDao)
             }
         }
     }

@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.runner.AndroidJUnit4
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
+import computer.lil.quilt.data.repo.MessageRepository
 import computer.lil.quilt.database.content.post.MentionDao
 import computer.lil.quilt.model.Adapters
 import computer.lil.quilt.model.Content
@@ -74,7 +75,7 @@ class QuiltDatabaseTests {
 
         val message = moshi.adapter(MessageModel::class.java).fromJson(toParse)
         val messageId = message!!.createMessageId()
-        MessageConverter.insertNetworkMessage(message, messageDao, mentionDao)
+        MessageRepository.insertNetworkMessage(message, messageDao, mentionDao)
         val byId = messageDao.findMessageById(messageId)
         assertEquals(byId.id, messageId)
         assertEquals(byId.author, message.author)
