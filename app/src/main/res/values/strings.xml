@@ -8,6 +8,7 @@
 
     <string name="nav_feed">Feed</string>
     <string name="nav_mentions">Mentions</string>
+    <string name="nav_settings">Settings</string>
 
     <string name="compose_hint">What’s up?</string>
     <string name="button_publish">Publish</string>

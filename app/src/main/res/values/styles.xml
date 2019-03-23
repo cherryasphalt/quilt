@@ -5,6 +5,7 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:textViewStyle">@style/workSansStyle</item>
+        <item name="bottomSheetDialogTheme">@style/RoundedBottomSheetDialogTheme</item>
     </style>
 
     <style name="workSansStyle" parent="@android:style/TextAppearance">
@@ -21,6 +22,14 @@
 
     <style name="body" parent="workSansStyle">
         <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="RoundedBottomSheetDialogTheme" parent="Theme.Design.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/RoundedModalStyle</item>
+    </style>
+
+    <style name="RoundedModalStyle" parent="Widget.Design.BottomSheet.Modal">
+        <item name="android:background">@drawable/rounded_dialog</item>
     </style>
 
 </resources>

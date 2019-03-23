@@ -17,7 +17,7 @@
             android:layout_marginStart="@dimen/space_large"
             android:layout_marginEnd="@dimen/space_small"
             android:layout_marginBottom="@dimen/space_small"
-            android:layout_marginTop="@dimen/space_xlarge"
+            android:layout_marginTop="@dimen/space_large"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             android:contentDescription="@string/image_profile_content_description"/>
@@ -27,12 +27,11 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/space_small"
             android:layout_marginEnd="@dimen/space_small"
-            android:layout_marginBottom="@dimen/space_small"
             android:singleLine="true"
             app:layout_constraintTop_toTopOf="@id/image_profile"
             app:layout_constraintStart_toEndOf="@id/image_profile"
             app:layout_constraintEnd_toEndOf="parent"
-            android:textAppearance="@style/h6"
+            android:textAppearance="@style/subtitle"
             android:text="hello"/>
         <TextView
             android:id="@+id/text_user_id"

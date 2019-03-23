@@ -7,10 +7,13 @@
         <variable name="message" type="computer.lil.quilt.database.Message"/>
     </data>
     <androidx.constraintlayout.widget.ConstraintLayout
-          android:orientation="vertical"
-          android:layout_width="match_parent"
-          android:layout_height="wrap_content"
-          android:layout_margin="@dimen/space_small">
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/space_large"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
         <ImageView
             android:id="@+id/image_profile"
             android:layout_width="@dimen/profile_image_size"
