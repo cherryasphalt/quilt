@@ -20,9 +20,10 @@ class ComposeActivity : AppCompatActivity() {
         DaggerDataComponent.builder().dataModule(DataModule(this)).build().inject(this)
 
         messagesViewModel = ViewModelProviders.of(this).get(MessagesViewModel::class.java)
-        setSupportActionBar(bottom_bar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
 
-        fab.setOnClickListener {
+        btn_publish.setOnClickListener {
             val text = edit_post.text.toString()
             messagesViewModel.submitNewPostMessage(text)
             finish()

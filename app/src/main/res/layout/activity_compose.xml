@@ -7,40 +7,40 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:context=".ComposeActivity">
+        <com.google.android.material.appbar.AppBarLayout
+                android:id="@+id/appBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:color/white">
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_scrollFlags="scroll|enterAlways">
+                <Button
+                    android:id="@+id/btn_publish"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/button_publish"
+                    android:layout_marginEnd="@dimen/space_medium"
+                    android:layout_gravity="end"/>
+            </androidx.appcompat.widget.Toolbar>
+        </com.google.android.material.appbar.AppBarLayout>
         <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_gravity="top">
+                app:layout_behavior="@string/appbar_scrolling_view_behavior">
                 <EditText
-                        android:id="@+id/edit_post"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:inputType="textMultiLine"
-                        android:hint="@string/compose_hint"
-                        android:gravity="top|start"
-                        android:padding="@dimen/space_large"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent"/>
+                    android:id="@+id/edit_post"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:inputType="textMultiLine"
+                    android:hint="@string/compose_hint"
+                    android:gravity="top|start"
+                    android:padding="@dimen/space_large"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"/>
         </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <com.google.android.material.bottomappbar.BottomAppBar
-                android:id="@+id/bottom_bar"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom"
-                android:backgroundTint="@color/colorPrimary"
-                app:hideOnScroll="false"
-                app:fabAlignmentMode="end"
-                app:navigationIcon="@drawable/ic_menu_black_24dp"/>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/fab"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_send_24dp"
-                android:backgroundTint="@color/colorAccent"
-                app:borderWidth="0dp"
-                app:layout_anchor="@id/bottom_bar"/>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
