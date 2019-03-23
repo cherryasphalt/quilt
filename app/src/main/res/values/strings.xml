@@ -6,6 +6,9 @@
     <string name="title_mentions">Mentions</string>
     <string name="image_profile_content_description">Profile image</string>
 
+    <string name="nav_feed">Feed</string>
+    <string name="nav_mentions">Mentions</string>
+
     <string name="compose_hint">What’s up?</string>
     <string name="button_publish">Publish</string>
 </resources>

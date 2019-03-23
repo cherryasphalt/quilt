@@ -10,19 +10,21 @@
           android:orientation="vertical"
           android:layout_width="match_parent"
           android:layout_height="wrap_content"
-          android:layout_margin="@dimen/space_small"
-          android:background="@color/colorAccent">
+          android:layout_margin="@dimen/space_small">
         <ImageView
             android:id="@+id/image_profile"
             android:layout_width="@dimen/profile_image_size"
             android:layout_height="@dimen/profile_image_size"
+            android:src="@color/colorPrimaryDark"
+            android:layout_margin="@dimen/space_small"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             android:contentDescription="@string/image_profile_content_description"/>
         <TextView
             android:id="@+id/text_author_name"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_margin="@dimen/space_small"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toEndOf="@id/image_profile"
             app:layout_constraintEnd_toEndOf="parent"
@@ -30,8 +32,9 @@
             android:text="hello"/>
         <TextView
             android:id="@+id/text_author_id"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_margin="@dimen/space_small"
             android:text="@{message.author.toString()}"
             android:singleLine="true"
             android:textSize="12sp"
@@ -43,8 +46,9 @@
             android:id="@+id/text_post_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_margin="@dimen/space_small"
             android:textAppearance="@style/body"
-            app:layout_constraintTop_toBottomOf="@id/text_author_id"
+            app:layout_constraintTop_toBottomOf="@id/image_profile"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
