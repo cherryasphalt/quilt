@@ -12,6 +12,11 @@
                 android:title="@string/nav_mentions" />
 
         <item
+                android:id="@+id/nav_connections"
+                android:icon="@drawable/ic_connection_24dp"
+                android:title="@string/nav_connections" />
+
+        <item
                 android:id="@+id/nav_settings"
                 android:icon="@drawable/ic_settings_24dp"
                 android:title="@string/nav_settings" />

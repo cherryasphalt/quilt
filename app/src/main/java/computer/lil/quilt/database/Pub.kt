@@ -6,7 +6,8 @@ import androidx.room.PrimaryKey
 import computer.lil.quilt.model.Identifier
 
 @Entity
-data class Feed(
+data class Pub(
     @PrimaryKey @ColumnInfo(name = "id") val id: Identifier,
-    @ColumnInfo(name = "sequence") val sequence: Int
+    @ColumnInfo(name = "host") val host: String,
+    @ColumnInfo(name = "port") val port: Int
 )

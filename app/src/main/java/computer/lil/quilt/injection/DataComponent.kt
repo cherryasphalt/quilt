@@ -1,6 +1,7 @@
 package computer.lil.quilt.injection
 
 import computer.lil.quilt.ComposeActivity
+import computer.lil.quilt.ConnectionsActivity
 import computer.lil.quilt.MainActivity
 import computer.lil.quilt.data.repo.MessageRepository
 import dagger.Component
@@ -12,6 +13,7 @@ interface DataComponent {
     fun inject(activity: MainActivity)
     fun inject(repo: MessageRepository)
     fun inject(activity: ComposeActivity)
+    fun inject(activity: ConnectionsActivity)
 
     @Component.Builder
     interface Builder {

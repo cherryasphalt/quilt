@@ -90,7 +90,8 @@ class MessageRepository(context: Context) {
                 networkMessage.hash,
                 content,
                 networkMessage.signature,
-                Date(System.currentTimeMillis())
+                Date(System.currentTimeMillis()),
+                networkMessage.toJson()
             )
             messageDao.insert(message)
         }

@@ -18,7 +18,7 @@ import computer.lil.quilt.model.Identifier
 import computer.lil.quilt.model.MessageModel
 import computer.lil.quilt.util.SingletonHolder
 
-@Database(entities = [Message::class, Feed::class, Blob::class, Mention::class], version = 1)
+@Database(entities = [Message::class, Peer::class, Pub::class, Blob::class, Mention::class], version = 1)
 @TypeConverters(DBTypeConverter::class, Identifier::class)
 abstract class QuiltDatabase: RoomDatabase() {
     companion object: SingletonHolder<QuiltDatabase, Context>({

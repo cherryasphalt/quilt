@@ -12,8 +12,11 @@
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
             android:theme="@style/AppTheme">
-        <activity android:name=".ComposeActivity"
-                  android:windowSoftInputMode="stateVisible">
+        <activity android:name=".ConnectionsActivity">
+        </activity>
+        <activity
+                android:name=".ComposeActivity"
+                android:windowSoftInputMode="stateVisible">
         </activity>
         <activity android:name=".MainActivity">
             <intent-filter>

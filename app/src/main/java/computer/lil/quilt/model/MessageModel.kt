@@ -41,21 +41,26 @@ class MessageModel(
         signature = "$encodedSig.sig.ed25519"
     }
 
+    val moshi = Moshi.Builder()
+        .add(Identifier.IdentifierJsonAdapter())
+        .add(Adapters.DataTypeAdapter())
+        .add(RPCJsonAdapterFactory())
+        .add(
+            PolymorphicJsonAdapterFactory.of(Content::class.java, "type")
+                .withSubtype(Content.Post::class.java, "post")
+                .withSubtype(Content.Pub::class.java, "pub")
+                .withSubtype(Content.Contact::class.java, "contact")
+        ).build()
+
     fun createMessageId(): Identifier {
-        val moshi = Moshi.Builder()
-            .add(Identifier.IdentifierJsonAdapter())
-            .add(Adapters.DataTypeAdapter())
-            .add(RPCJsonAdapterFactory())
-            .add(
-                PolymorphicJsonAdapterFactory.of(Content::class.java, "type")
-                    .withSubtype(Content.Post::class.java, "post")
-                    .withSubtype(Content.Pub::class.java, "pub")
-                    .withSubtype(Content.Contact::class.java, "contact")
-            ).build()
         val json = moshi.adapter(MessageModel::class.java).indent("  ").toJson(this)
         val id = Crypto.sha256(json)
         val encodedId = Base64.encodeToString(id, Base64.NO_WRAP)
 
         return Identifier(encodedId, Identifier.AlgoType.SHA256, Identifier.IdentityType.MESSAGE)
+    }
+
+    fun toJson(): String {
+        return moshi.adapter(MessageModel::class.java).toJson(this)
     }
 }

@@ -16,7 +16,8 @@ data class Message(
     @ColumnInfo(name = "hash") var hash: String,
     @Embedded val content: Content,
     @ColumnInfo(name = "signature") val signature: String?,
-    @ColumnInfo(name = "received_timestamp") val receivedTimestamp: Date
+    @ColumnInfo(name = "received_timestamp") val receivedTimestamp: Date,
+    @ColumnInfo(name = "raw") val raw: String = ""
 )
 
 data class MessageAndAllMentions(

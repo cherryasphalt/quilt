@@ -7,7 +7,8 @@
     <string name="image_profile_content_description">Profile image</string>
 
     <string name="nav_feed">Feed</string>
-    <string name="nav_mentions">Mentions</string>
+    <string name="nav_mentions">Mentions</string>>
+    <string name="nav_connections">Connections</string>
     <string name="nav_settings">Settings</string>
 
     <string name="compose_hint">What’s up?</string>
