@@ -1,10 +1,7 @@
 package computer.lil.quilt.database
 
 import androidx.lifecycle.LiveData
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
-import androidx.room.Query
+import androidx.room.*
 import computer.lil.quilt.model.Identifier
 
 @Dao
@@ -24,10 +21,10 @@ interface MessageDao {
     @Query("SELECT * FROM messages WHERE id = :id")
     fun findMessageById(id: String): LiveData<Message>
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertAll(vararg messages: Message)
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insert(message: Message)
 
     @Query("DELETE FROM messages")

@@ -14,12 +14,17 @@ import io.reactivex.Observable
 import io.reactivex.ObservableEmitter
 import io.reactivex.ObservableOnSubscribe
 import okio.*
+import okio.ByteString.Companion.decodeHex
 import java.io.Closeable
 import java.io.IOException
 import java.net.Socket
 import java.util.concurrent.Executors
 
-class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, remoteKey: ByteArray, val moshi: Moshi) {
+class PeerConnection(
+    identityHandler: IdentityHandler,
+    networkId: ByteArray = "d4a1cb88a66f02f8db635ce26441cc5dac1b08420ceaac230839b755845a9ffb".decodeHex().toByteArray(),
+    remoteKey: ByteArray,
+    val moshi: Moshi) {
     private val clientHandshake = ClientHandshake(identityHandler, remoteKey, networkId)
     var socket: Socket? = null
     var source: BufferedSource? = null
@@ -28,7 +33,6 @@ class PeerConnection(identityHandler: IdentityHandler, networkId: ByteArray, rem
     var executor = Executors.newScheduledThreadPool(3)
     var clientToServerRequestNumber = 0
     private val requestQueue = mutableListOf<RPCRequest>()
-    private val writeQueue = Buffer()
 
     fun listenToPeer(): Observable<RPCMessage> {
         val handler: ObservableOnSubscribe<RPCMessage> = ObservableOnSubscribe {

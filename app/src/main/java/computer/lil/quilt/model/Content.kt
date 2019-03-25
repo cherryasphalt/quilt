@@ -35,6 +35,14 @@ open class Content(
     }
 
     @JsonClass(generateAdapter = true)
+    data class About(
+        override val type: String = "about",
+        val about: Identifier,
+        val image: Identifier,
+        val name: String
+    ) : Content(type)
+
+    @JsonClass(generateAdapter = true)
     data class Contact(
         override val type: String = "contact",
         val contact: Identifier,

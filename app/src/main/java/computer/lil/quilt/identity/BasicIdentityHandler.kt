@@ -8,6 +8,7 @@ import com.goterl.lazycode.lazysodium.interfaces.Sign
 import com.goterl.lazycode.lazysodium.utils.Key
 import com.goterl.lazycode.lazysodium.utils.KeyPair
 import computer.lil.quilt.model.Identifier
+import computer.lil.quilt.util.Crypto
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
@@ -30,6 +31,8 @@ class BasicIdentityHandler(): IdentityHandler {
     constructor(publicKey: ByteArray, privateKey: ByteArray) : this() {
         keyPair = KeyPair(Key.fromBytes(publicKey), Key.fromBytes(privateKey))
     }
+
+    constructor(privateKey: ByteArray) : this(Crypto.derivePublicKey(privateKey), privateKey)
 
     override fun generateIdentityKeyPair(): Boolean {
         if (keyPair != null)

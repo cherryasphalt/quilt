@@ -62,7 +62,7 @@ open class RPCRequest(
         val args: List<Arg>
     ): RPCRequest(name, type) {
         data class Arg(
-            val feed: String
+            val feed: Identifier
         )
     }
 
@@ -91,14 +91,12 @@ open class RPCRequest(
         val args: List<List<String>>
     ): RPCRequest(name, type)
 
-
     @JsonClass(generateAdapter = true)
     data class RequestBlobsChanges(
         override val name: List<String> = listOf(RPCRequest.REQUEST_BLOBS, RPCRequest.REQUEST_CHANGES),
         override val type: RequestType,
         val args: List<String>
     ): RPCRequest(name, type)
-
 
     @JsonClass(generateAdapter = true)
     data class RequestBlobsCreateWants(
