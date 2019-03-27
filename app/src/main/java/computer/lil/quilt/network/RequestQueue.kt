@@ -1,7 +1,10 @@
 package computer.lil.quilt.network
 
+import android.content.Context
 import android.util.Log
 import com.squareup.moshi.Moshi
+import computer.lil.quilt.data.repo.MessageRepository
+import computer.lil.quilt.model.Identifier
 import computer.lil.quilt.model.RPCJsonAdapterFactory
 import computer.lil.quilt.model.RPCMessage
 import computer.lil.quilt.model.RPCRequest
@@ -15,7 +18,7 @@ class RequestQueue(val moshi: Moshi) {
 
     fun add(request: RPCMessage) {
         if (checkValidRequest(request)) {
-            val moshi = Moshi.Builder().add(RPCJsonAdapterFactory()).build()
+            val moshi = Moshi.Builder().add(RPCJsonAdapterFactory()).add(Identifier.IdentifierJsonAdapter()).build()
             val jsonAdapter = moshi.adapter(RPCRequest::class.java)
             val bodyString = ByteString.copyFrom(request.body).toStringUtf8()
             Log.d("request body string", bodyString)
@@ -29,14 +32,21 @@ class RequestQueue(val moshi: Moshi) {
             throw ProtocolException("Invalid request received.")
     }
 
-    fun processRequest(connection: PeerConnection) {
+    fun processRequest(connection: PeerConnection, context: Context) {
         if (queue.isNotEmpty()) {
+            val messageRepo = MessageRepository(context)
+
             val requestPair = queue.removeAt(0)
             val request = requestPair.second
             when (request.name[0]) {
                 RPCRequest.REQUEST_CREATE_HISTORY_STREAM -> {
-                    //get history from db
-                    //endStream(requestPair.first, connection)
+                    val args = (request as RPCRequest.RequestCreateHistoryStream).args
+                    if (!args.isEmpty()) {
+                        for (message in messageRepo.getMessagesFromId(args[0].id, args[0].seq)) {
+
+                        }
+                    }
+                    endStream(requestPair.first, connection)
                 }
                 RPCRequest.REQUEST_CREATE_USER_STREAM -> {
                     //something
@@ -50,13 +60,13 @@ class RequestQueue(val moshi: Moshi) {
                             //writeToPe
                         }
                         RPCRequest.REQUEST_HAS -> {
-                            refuseRequest(requestPair.first, connection)
+                            //refuseRequest(requestPair.first, connection)
                         }
                         RPCRequest.REQUEST_CHANGES -> {
-                            refuseRequest(requestPair.first, connection)
+                            //refuseRequest(requestPair.first, connection)
                         }
                         RPCRequest.REQUEST_CREATE_WANTS -> {
-                            refuseRequest(requestPair.first, connection)
+                            //refuseRequest(requestPair.first, connection)
                         }
                     }
                 }
@@ -65,12 +75,11 @@ class RequestQueue(val moshi: Moshi) {
         }
     }
 
-    private fun refuseRequest(requestNumber: Int, connection: PeerConnection) {
-        //Retrieve wants
-        val payload = "{}".toByteArray()
+    private fun endStream(requestNumber: Int, connection: PeerConnection) {
+        val payload = "true".toByteArray()
         val response = RPCMessage(
             true,
-            false,
+            true,
             RPCProtocol.Companion.RPCBodyType.JSON,
             payload.size,
             -requestNumber,

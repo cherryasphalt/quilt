@@ -2,6 +2,7 @@ package computer.lil.quilt.network
 
 import android.util.Log
 import com.squareup.moshi.Moshi
+import computer.lil.quilt.database.Peer
 import computer.lil.quilt.identity.IdentityHandler
 import computer.lil.quilt.model.InviteCode
 import computer.lil.quilt.model.RPCMessage
@@ -34,17 +35,17 @@ class PeerConnection(
     var clientToServerRequestNumber = 0
     private val requestQueue = mutableListOf<RPCRequest>()
 
-    fun listenToPeer(): Observable<RPCMessage> {
+    fun listenToPeer(peerList: List<Peer>): Observable<RPCMessage> {
         val handler: ObservableOnSubscribe<RPCMessage> = ObservableOnSubscribe {
                 emitter: ObservableEmitter<RPCMessage> ->
             val future = executor.submit {
                 socket?.run {
                     if(isConnected && clientHandshake.completed) {
-                        writeRequests()
+                        writeRequests(peerList)
                         readFromPeer(emitter)
                     }
                 }
-                emitter.onComplete()
+                //emitter.onComplete()
             }
             emitter.setCancellable { future.cancel(false) }
         }
@@ -121,40 +122,29 @@ class PeerConnection(
         return false
     }
 
-    fun writeRequests() {
-        val createHistoryStream = RPCRequest.RequestCreateHistoryStream(
-            args = listOf(
-                RPCRequest.RequestCreateHistoryStream.Arg("@Z2rNu9oinC9LzYPcaaOjEELE7pImbQnKu2mbCzBmsN4=.ed25519")
-            )
-        )
-
+    fun writeRequests(peerList: List<Peer>) {
         val jsonAdapter = moshi.adapter(RPCRequest.RequestCreateHistoryStream::class.java)
-        val payload = jsonAdapter.toJson(createHistoryStream).toByteArray()
+        for (peer in peerList) {
+            val createHistoryStream = RPCRequest.RequestCreateHistoryStream(
+                args = listOf(
+                    RPCRequest.RequestCreateHistoryStream.Arg(
+                        id = peer.id
+                    )
+                )
+            )
 
-        val blobsCreateWants = RPCRequest.RequestBlobsCreateWants(args = listOf())
-        val jsonAdapter2 = moshi.adapter(RPCRequest.RequestBlobsCreateWants::class.java)
-        val payload2 = jsonAdapter2.toJson(blobsCreateWants).toByteArray()
-
-        /*val response2 = RPCMessage(
-            true,
-            false,
-            RPCProtocol.Companion.RPCBodyType.JSON,
-            payload2.size,
-            ++clientToServerRequestNumber,
-            payload2
-        )*/
-
-        val response = RPCMessage(
-            true,
-            false,
-            RPCProtocol.Companion.RPCBodyType.JSON,
-            payload.size,
-            ++clientToServerRequestNumber,
-            payload
-        )
-
-        //writeToPeer(response2)
-        writeToPeer(response)
+            val payload = jsonAdapter.toJson(createHistoryStream).toByteArray()
+            val response = RPCMessage(
+                true,
+                false,
+                RPCProtocol.Companion.RPCBodyType.JSON,
+                payload.size,
+                ++clientToServerRequestNumber,
+                payload
+            )
+            Log.d("writing body", createHistoryStream.toString())
+            writeToPeer(response)
+        }
     }
 
     fun writeToPeer(message: RPCMessage) {
@@ -167,6 +157,7 @@ class PeerConnection(
                 flush()
             }
         } catch (e: IOException) {
+            e.printStackTrace()
             socket?.let {
                 closeQuietly(it)
             }
@@ -182,30 +173,34 @@ class PeerConnection(
 
                 var byteCount = read(buffer, 8192L)
                 while (byteCount != -1L) {
-                    val readBytes = buffer.readByteArray(byteCount)
-                    val decoded = boxStream?.readFromServer(readBytes)
+                    if (byteCount >= BoxStream.HEADER_SIZE) {
+                        val readBytes = buffer.readByteArray(byteCount)
+                        val decoded = boxStream?.readFromServer(readBytes)
 
-                    if (rpcBuffer.size == 0L)
-                        rpcExpectedLength = RPCProtocol.getBodyLength(decoded!!) + RPCProtocol.HEADER_SIZE
+                        if (rpcBuffer.size == 0L)
+                            rpcExpectedLength = RPCProtocol.getBodyLength(decoded!!) + RPCProtocol.HEADER_SIZE
 
-                    rpcBuffer.write(decoded!!)
-                    while (rpcExpectedLength != 0 && rpcBuffer.size >= rpcExpectedLength.toLong()) {
-                        emitter.onNext(
-                            RPCProtocol.decode(
-                                rpcBuffer.readByteArray(rpcExpectedLength.toLong())
+                        rpcBuffer.write(decoded!!)
+                        while (rpcExpectedLength != 0 && rpcBuffer.size >= (rpcExpectedLength.toLong())) {
+                            emitter.onNext(
+                                RPCProtocol.decode(
+                                    rpcBuffer.readByteArray(rpcExpectedLength.toLong())
+                                )
                             )
-                        )
 
-                        rpcExpectedLength = if (rpcBuffer.size > 0L)
-                            RPCProtocol.getBodyLength(rpcBuffer.peek().readByteArray())
-                        else
-                            0
+                            rpcExpectedLength =
+                                if (rpcBuffer.size >= RPCProtocol.HEADER_SIZE)
+                                    RPCProtocol.getBodyLength(rpcBuffer.peek().readByteArray()) + RPCProtocol.HEADER_SIZE
+                                else
+                                    0
+                        }
                     }
 
                     byteCount = read(buffer, 8192L)
                 }
             }
         } catch (e: IOException) {
+            e.printStackTrace()
             socket?.let {
                 closeQuietly(it)
             }

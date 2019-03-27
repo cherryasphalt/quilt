@@ -8,7 +8,7 @@ class DBTypeConverter {
     companion object {
         @TypeConverter
         @JvmStatic
-        fun toUri(uri: Uri): String {
+        fun toUri(uri: Uri?): String {
             return uri.toString()
         }
 

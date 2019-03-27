@@ -21,7 +21,7 @@ class ConnectionsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_connections)
         syncManager = SyncManager(this, identityHandler, moshi)
         btn_retry.setOnClickListener {
-            syncManager.startSync()
+            syncManager.startSync(this, this)
         }
     }
 

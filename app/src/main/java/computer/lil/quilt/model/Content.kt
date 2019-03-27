@@ -36,7 +36,7 @@ open class Content(
 
     @JsonClass(generateAdapter = true)
     data class About(
-        override val type: String = "about",
+        @Transient override val type: String = "about",
         val about: Identifier,
         val image: Identifier,
         val name: String

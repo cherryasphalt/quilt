@@ -15,6 +15,7 @@ import computer.lil.quilt.identity.IdentityHandler
 import computer.lil.quilt.injection.DaggerDataComponent
 import computer.lil.quilt.injection.DataModule
 import computer.lil.quilt.model.ExtendedMessage
+import computer.lil.quilt.model.Identifier
 import computer.lil.quilt.model.MessageModel
 import io.reactivex.Observable
 import java.util.*
@@ -42,6 +43,10 @@ class MessageRepository(context: Context) {
 
     fun getRecentMessagesFromDb(limit: Int = 100): Observable<Message> {
         return Observable.fromArray(*messageDao.getAll().value!!.toTypedArray())
+    }
+
+    fun getMessagesFromId(id: Identifier, sequence: Int = 1): List<Message> {
+        return messageDao.findMessageByIdAndSequence(id, sequence)
     }
 
     fun saveMessage(message: ExtendedMessage) {

@@ -32,9 +32,9 @@ open class RPCRequest(
     ): RPCRequest(name, type) {
         @JsonClass(generateAdapter = true)
         data class Arg(
-            val id: String,
-            val seq: Int = 0,
-            val limit: Int = 1,
+            val id: Identifier,
+            val seq: Int = 1,
+            val limit: Int = -1,
             val live: Boolean = false,
             val old: Boolean = true,
             val keys: Boolean = true

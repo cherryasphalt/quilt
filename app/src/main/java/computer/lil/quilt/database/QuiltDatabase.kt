@@ -38,15 +38,43 @@ abstract class QuiltDatabase: RoomDatabase() {
 
     abstract fun messageDao(): MessageDao
     abstract fun mentionDao(): MentionDao
+    abstract fun peerDao(): PeerDao
 
     private class PopulateDbAsync internal constructor(context: Context) : AsyncTask<Void, Void, Void>() {
         private val messageDao: MessageDao = Companion.getInstance(context).messageDao()
         private val mentionDao: MentionDao = Companion.getInstance(context).mentionDao()
+        private val peerDao: PeerDao = Companion.getInstance(context).peerDao()
 
         override fun doInBackground(vararg params: Void): Void? {
             messageDao.deleteAll()
             insertMessages()
+            peerDao.deleteAll()
+            insertPeers()
             return null
+        }
+
+        fun insertPeers() {
+            val moshi = Moshi.Builder()
+                .add(Identifier.IdentifierJsonAdapter())
+                .add(Adapters.DataTypeAdapter())
+                .add(
+                    PolymorphicJsonAdapterFactory.of(Content::class.java, "type")
+                        .withSubtype(Content.Post::class.java, "post")
+                        .withSubtype(Content.Pub::class.java, "pub")
+                        .withSubtype(Content.Contact::class.java, "contact")
+                        .withSubtype(Content.About::class.java, "about")
+                ).build()
+
+            val peerList = listOf(
+                "@Z2rNu9oinC9LzYPcaaOjEELE7pImbQnKu2mbCzBmsN4=.ed25519",
+                "@EMovhfIrFk4NihAKnRNhrfRaqIhBv1Wj8pTxJNgvCCY=.ed25519")
+                .map {
+                    Identifier.fromString(it)
+                }
+                .map {
+                    Peer(it!!, 0, null, true, false)
+                }
+            peerDao.insertPeers(*peerList.toTypedArray())
         }
 
         fun insertMessages() {
@@ -58,6 +86,7 @@ abstract class QuiltDatabase: RoomDatabase() {
                         .withSubtype(Content.Post::class.java, "post")
                         .withSubtype(Content.Pub::class.java, "pub")
                         .withSubtype(Content.Contact::class.java, "contact")
+                        .withSubtype(Content.About::class.java, "about")
                 ).build()
 
             val toParse = "{\n" +

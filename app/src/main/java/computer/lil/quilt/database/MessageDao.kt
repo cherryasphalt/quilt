@@ -21,6 +21,9 @@ interface MessageDao {
     @Query("SELECT * FROM messages WHERE id = :id")
     fun findMessageById(id: String): LiveData<Message>
 
+    @Query("SELECT * FROM messages WHERE id = :id AND sequence > :seq")
+    fun findMessageByIdAndSequence(id: Identifier, seq: Int = 1): List<Message>
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertAll(vararg messages: Message)
 
