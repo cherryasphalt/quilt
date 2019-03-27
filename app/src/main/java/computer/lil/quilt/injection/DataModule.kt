@@ -33,6 +33,7 @@ class DataModule(private val context: Context) {
                     .withSubtype(Content.Pub::class.java, "pub")
                     .withSubtype(Content.Contact::class.java, "contact")
                     .withSubtype(Content.About::class.java, "about")
+                    .withSubtype(Content.Channel::class.java, "channel")
             ).build()
 
     @Provides @Singleton
