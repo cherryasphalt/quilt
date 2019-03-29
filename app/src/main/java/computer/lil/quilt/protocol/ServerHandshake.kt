@@ -1,10 +1,11 @@
 package computer.lil.quilt.protocol
 
-import com.goterl.lazycode.lazysodium.interfaces.Hash
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.interfaces.Sign
 import com.goterl.lazycode.lazysodium.utils.Key
 import computer.lil.quilt.identity.IdentityHandler
+import computer.lil.quilt.util.Crypto
+import computer.lil.quilt.util.Crypto.Companion.toByteString
 import okio.ByteString
 import okio.ByteString.Companion.decodeHex
 
@@ -17,17 +18,15 @@ class ServerHandshake(identityHandler: IdentityHandler, networkId: ByteString = 
     }
 
     fun verifyClientAuthentication(data: ByteString): Boolean {
-        val dataPlainText = ByteArray(96)
-        val zeroNonce = ByteArray(SecretBox.NONCEBYTES)
+        val zeroNonce = ByteArray(SecretBox.NONCEBYTES).toByteString()
         val hashKey = ByteString.of(*networkId.toByteArray(), *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes).sha256()
-        ls.cryptoSecretBoxOpenEasy(dataPlainText, data.toByteArray(), data.size.toLong(), zeroNonce, hashKey.toByteArray())
+        val dataPlainText = Crypto.secretBoxOpen(data, hashKey, zeroNonce)
 
-        val dataPlainTextString = ByteString.of(*dataPlainText)
-        val detachedSignatureA = dataPlainTextString.substring(0, 64)
-        val clientLongTermPublicKey = dataPlainTextString.substring(64, 96)
-        val hashab = ByteString.of(*sharedSecretab!!.asBytes).sha256()
+        val detachedSignatureA = dataPlainText?.substring(0, 64)
+        val clientLongTermPublicKey = dataPlainText?.substring(64, 96)
+        val hashab = sharedSecretab!!.asBytes.toByteString().sha256()
         val expectedMessage = ByteString.of(*networkId.toByteArray(), *identityHandler.getIdentityPublicKey().toByteArray(), *hashab.toByteArray())
-        if (ls.cryptoSignVerifyDetached(detachedSignatureA.toByteArray(), expectedMessage.toByteArray(), expectedMessage.size.toLong(), clientLongTermPublicKey.toByteArray())) {
+        if (ls.cryptoSignVerifyDetached(detachedSignatureA?.toByteArray(), expectedMessage.toByteArray(), expectedMessage.size.toLong(), clientLongTermPublicKey?.toByteArray())) {
             this.remoteKey = clientLongTermPublicKey
             this.detachedSignatureA = detachedSignatureA
 
@@ -40,18 +39,15 @@ class ServerHandshake(identityHandler: IdentityHandler, networkId: ByteString = 
     }
 
     fun createAcceptMessage(): ByteString {
-        val hashab = ByteArray(Hash.SHA256_BYTES)
-        ls.cryptoHashSha256(hashab, sharedSecretab?.asBytes, sharedSecretab?.asBytes!!.getLongSize())
-        val message = ByteString.of(*networkId.toByteArray(), *detachedSignatureA!!.toByteArray(), *remoteKey!!.toByteArray(), *hashab)
+        val hashab = sharedSecretab?.asBytes?.toByteString()?.sha256()
+        val message = ByteString.of(*networkId.toByteArray(), *detachedSignatureA!!.toByteArray(), *remoteKey!!.toByteArray(), *hashab!!.toByteArray())
         val detachedSignatureB = identityHandler.signUsingIdentity(message)
 
-        val zeroNonce = ByteArray(SecretBox.NONCEBYTES)
+        val zeroNonce = ByteArray(SecretBox.NONCEBYTES).toByteString()
         val key = ByteString.of(*networkId.toByteArray(), *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes, *sharedSecretAb!!.asBytes).sha256()
-
-        val payload = ByteArray(SecretBox.MACBYTES + detachedSignatureB.size)
-        ls.cryptoSecretBoxEasy(payload, detachedSignatureB.toByteArray(), detachedSignatureB.size.toLong(), zeroNonce, key.toByteArray())
+        val payload = Crypto.secretBoxSeal(detachedSignatureB, key, zeroNonce)
 
         completed = true
-        return ByteString.of(*payload)
+        return payload
     }
 }

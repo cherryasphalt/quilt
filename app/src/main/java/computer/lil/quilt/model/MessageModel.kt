@@ -1,14 +1,10 @@
 package computer.lil.quilt.model
 
-import android.util.Base64
-import com.squareup.moshi.FromJson
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import computer.lil.quilt.identity.IdentityHandler
-import computer.lil.quilt.injection.DataComponent
-import computer.lil.quilt.injection.DataModule
-import computer.lil.quilt.util.Crypto
+import computer.lil.quilt.util.Crypto.Companion.toByteString
 import java.util.*
 
 @JsonClass(generateAdapter = true)
@@ -56,10 +52,13 @@ class MessageModel(
         ).build()
 
     fun createMessageId(): Identifier {
-        val json = moshi.adapter(MessageModel::class.java).indent("  ").toJson(this)
-        val id = Crypto.sha256(json)
-        val encodedId = Base64.encodeToString(id, Base64.NO_WRAP)
-
+        val encodedId = moshi.adapter(MessageModel::class.java)
+                                .indent("  ")
+                                .toJson(this)
+                                .toByteArray()
+                                .toByteString()
+                                .sha256()
+                                .base64()
         return Identifier(encodedId, Identifier.AlgoType.SHA256, Identifier.IdentityType.MESSAGE)
     }
 

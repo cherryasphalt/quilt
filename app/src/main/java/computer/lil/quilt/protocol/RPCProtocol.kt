@@ -1,15 +1,13 @@
 package computer.lil.quilt.protocol
 
-import com.squareup.moshi.JsonReader
 import computer.lil.quilt.model.RPCMessage
-import okio.Buffer
 import okio.BufferedSource
 import okio.ByteString
-import okio.Okio
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.experimental.and
 import kotlin.experimental.or
+import computer.lil.quilt.util.Crypto.Companion.toByteString
 
 class RPCProtocol {
     companion object {
@@ -34,7 +32,7 @@ class RPCProtocol {
             val header = ByteArray(HEADER_SIZE)
             val readSize = encoded.read(header)
 
-            return if (readSize == HEADER_SIZE) getBodyLength(ByteString.of(*header))
+            return if (readSize == HEADER_SIZE) getBodyLength(header.toByteString())
             else -1
         }
 
@@ -60,7 +58,7 @@ class RPCProtocol {
 
 
         fun goodbye(requestNumber: Int): ByteString {
-            return encode(RPCMessage(false, true, Companion.RPCBodyType.BINARY, 9, requestNumber, ByteString.of(*ByteArray(9))))
+            return encode(RPCMessage(false, true, Companion.RPCBodyType.BINARY, 9, requestNumber, ByteArray(9).toByteString()))
         }
 
         fun encode(rpcMessage: RPCMessage): ByteString {

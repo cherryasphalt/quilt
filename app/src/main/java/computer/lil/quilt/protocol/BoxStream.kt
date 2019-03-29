@@ -1,13 +1,16 @@
 package computer.lil.quilt.protocol
 
-import com.goterl.lazycode.lazysodium.LazySodiumAndroid
-import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
-import okio.*
-import java.lang.Exception
+import computer.lil.quilt.util.Crypto
+import computer.lil.quilt.util.Crypto.Companion.increment
+import computer.lil.quilt.util.Crypto.Companion.secretBoxOpen
+import computer.lil.quilt.util.Crypto.Companion.secretBoxSeal
+import computer.lil.quilt.util.Crypto.Companion.toByteString
+import okio.Buffer
+import okio.BufferedSource
+import okio.ByteString
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.nio.charset.StandardCharsets
 import kotlin.math.ceil
 import kotlin.math.min
 
@@ -20,31 +23,6 @@ class BoxStream(
     companion object {
         const val HEADER_SIZE = 34
         const val MAX_MESSAGE_SIZE = 4096
-    }
-
-    private val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
-
-    private fun ByteArray.increment(): ByteArray {
-        for (i in size - 1 downTo 0) {
-            if (this[i] == 0xFF.toByte()) {
-                this[i] = 0x00.toByte()
-            } else {
-                ++this[i]
-                break
-            }
-        }
-        return this
-    }
-
-    private fun ByteString.increment(): ByteString {
-        return ByteString.of(*this.toByteArray().increment())
-    }
-
-    private fun Buffer.increment(): Buffer {
-        val incremented = this.snapshot().increment()
-        this.skip(this.size)
-        this.write(incremented)
-        return this
     }
 
     fun sendToClient(message: ByteString): ByteString {
@@ -64,7 +42,7 @@ class BoxStream(
     }
 
     fun createGoodbye(key: ByteString, nonce: Buffer): ByteString {
-        return encryptMessage(ByteString.of(*ByteArray(18)), key, nonce)
+        return encryptMessage(ByteArray(18).toByteString(), key, nonce)
     }
 
     fun decryptMessage(source: BufferedSource, key: ByteString, nonce: Buffer): ByteString {
@@ -87,32 +65,22 @@ class BoxStream(
         val encryptedHeader = Buffer()
         val bytesRead = peekSource.read(encryptedHeader, HEADER_SIZE.toLong())
         if (bytesRead == HEADER_SIZE.toLong()) {
-            val header = ByteArray(HEADER_SIZE - SecretBox.MACBYTES)
-
-            if (ls.cryptoSecretBoxOpenEasy(header, encryptedHeader.readByteArray(), bytesRead, headerNonce.toByteArray(), key.toByteArray())) {
-                val messageLength =
-                    ByteBuffer.wrap(header.sliceArray(0 until 2)).order(ByteOrder.BIG_ENDIAN).short.toLong()
-                val bodyTag = header.sliceArray(2 until header.size)
+            secretBoxOpen(encryptedHeader.readByteString(), key, headerNonce)?.let { header ->
+                val messageLength = header.substring(0, 2).asByteBuffer().order(ByteOrder.BIG_ENDIAN).short.toLong()
+                val bodyTag = header.substring(2, header.size)
 
                 val encryptedBody = Buffer()
-                if (peekSource.read(encryptedBody, messageLength) == messageLength) {
-                    val encryptedBodyWithHeader = byteArrayOf(*bodyTag, *encryptedBody.readByteArray())
-                    val decryptedBody = ByteArray(messageLength.toInt())
-                    ls.cryptoSecretBoxOpenEasy(
-                        decryptedBody,
-                        encryptedBodyWithHeader,
-                        encryptedBodyWithHeader.size.toLong(),
-                        bodyNonce.toByteArray(),
-                        key.toByteArray()
-                    )
+                return if (peekSource.read(encryptedBody, messageLength) == messageLength) {
+                    val encryptedBodyWithHeader = ByteString.of(*bodyTag.toByteArray(), *encryptedBody.readByteArray())
+                    val decryptedBody = Crypto.secretBoxOpen(encryptedBodyWithHeader, key, bodyNonce)
 
                     peekSource.close()
                     source.skip(HEADER_SIZE + messageLength)
                     nonce.increment()
                     nonce.increment()
-                    return ByteString.of(*decryptedBody)
+                    decryptedBody
                 } else {
-                    return null
+                    null
                 }
             }
         } else if (bytesRead == -1L) {
@@ -141,17 +109,15 @@ class BoxStream(
         val bodyNonce = nonce.increment().snapshot()
         nonce.increment()
 
-        val encryptedBody = ByteArray(messageSegment.size + SecretBox.MACBYTES)
-        ls.cryptoSecretBoxEasy(encryptedBody, messageSegment.toByteArray(), messageSegment.size.toLong(), bodyNonce.toByteArray(), key.toByteArray())
+        val encryptedBody = secretBoxSeal(messageSegment, key, bodyNonce)
 
-        val headerValue = byteArrayOf(
+        val headerValue = ByteString.of(
             *ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt(encryptedBody.size - SecretBox.MACBYTES).array().sliceArray(2 until 4),
-            *encryptedBody.sliceArray(0 until SecretBox.MACBYTES)
+            *encryptedBody.substring(0, SecretBox.MACBYTES).toByteArray()
         )
 
-        val encryptedHeader = ByteArray(headerValue.size + SecretBox.MACBYTES)
-        ls.cryptoSecretBoxEasy(encryptedHeader, headerValue, headerValue.size.toLong(), headerNonce.toByteArray(), key.toByteArray())
+        val encryptedHeader = secretBoxSeal(headerValue, key, headerNonce)
 
-        return ByteString.of(*encryptedHeader, *encryptedBody.sliceArray(SecretBox.MACBYTES until encryptedBody.size))
+        return ByteString.of(*encryptedHeader.toByteArray(), *encryptedBody.substring(SecretBox.MACBYTES, encryptedBody.size).toByteArray())
     }
 }

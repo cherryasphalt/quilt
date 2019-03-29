@@ -2,16 +2,16 @@ package computer.lil.quilt.protocol
 
 import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid
-import com.goterl.lazycode.lazysodium.interfaces.Auth
-import com.goterl.lazycode.lazysodium.interfaces.Hash
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.utils.Key
 import com.goterl.lazycode.lazysodium.utils.KeyPair
 import computer.lil.quilt.identity.IdentityHandler
+import computer.lil.quilt.util.Crypto.Companion.createHmac
+import computer.lil.quilt.util.Crypto.Companion.toByteString
 import okio.Buffer
 import okio.ByteString
-import java.nio.charset.StandardCharsets
 import okio.ByteString.Companion.decodeHex
+import java.nio.charset.StandardCharsets
 
 abstract class Handshake(
         val identityHandler: IdentityHandler,
@@ -35,18 +35,6 @@ abstract class Handshake(
     protected var sharedSecretAb: Key? = null
 
     protected fun ByteArray.getLongSize(): Long { return this.size.toLong() }
-
-    private fun createHmac(key: ByteString, message: ByteString): ByteString {
-        val hmac = ByteArray(Auth.BYTES)
-        ls.cryptoAuth(hmac, message.toByteArray(), message.size.toLong(), key.toByteArray())
-        return ByteString.of(*hmac)
-    }
-
-    private fun hash256(message: ByteArray): ByteArray {
-        val hash = ByteArray(Hash.SHA256_BYTES)
-        ls.cryptoHashSha256(hash, message, message.getLongSize())
-        return hash
-    }
 
     fun createHelloMessage(): ByteString {
         val localEphemeralKeyPairString = ByteString.of(*localEphemeralKeyPair.publicKey.asBytes)
@@ -84,7 +72,7 @@ abstract class Handshake(
             ).sha256()
 
         val localToRemoteNonce = createHmac(networkId, remoteEphemeralKey!!).substring(0, SecretBox.NONCEBYTES)
-        val remoteToLocalNonce = createHmac(networkId, ByteString.of(*localEphemeralKeyPair.publicKey.asBytes)).substring(0, SecretBox.NONCEBYTES)
+        val remoteToLocalNonce = createHmac(networkId, localEphemeralKeyPair.publicKey.asBytes.toByteString()).substring(0, SecretBox.NONCEBYTES)
 
         return BoxStream(localToRemoteKey, remoteToLocalKey, Buffer().write(localToRemoteNonce), Buffer().write(remoteToLocalNonce))
     }
