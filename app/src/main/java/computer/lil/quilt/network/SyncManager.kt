@@ -23,7 +23,7 @@ class SyncManager(context: Context, val identityHandler: IdentityHandler, val mo
     val peerRepository = PeerRepository(context)
     private val connection = PeerConnection(
         identityHandler,
-        remoteKey = "676acdbbda229c2f4bcd83dc69a3a31042c4ee92266d09cabb699b0b3066b0de".decodeHex().toByteArray(),
+        remoteKey = "676acdbbda229c2f4bcd83dc69a3a31042c4ee92266d09cabb699b0b3066b0de".decodeHex(),
         moshi = moshi
     )
 
@@ -49,12 +49,12 @@ class SyncManager(context: Context, val identityHandler: IdentityHandler, val mo
                                         onNext = {
                                             Log.d("server response", it.toString())
                                             if (it.enderror) {
-                                                Log.d("enderror", moshi.adapter(Boolean::class.java).fromJson(ByteString.of(*it.body).utf8()).toString())
+                                                Log.d("enderror", moshi.adapter(Boolean::class.java).fromJson(it.body.utf8()).toString())
                                             } else if (it.requestNumber > 0) {
                                                 requestQueue.add(it)
                                                 requestQueue.processRequest(connection, context)
                                             } else {
-                                                val messageJson = ByteString.of(*it.body).utf8()
+                                                val messageJson = it.body.utf8()
                                                 Log.d("not request", messageJson)
                                                 moshi.adapter(ExtendedMessage::class.java).fromJson(messageJson)?.let {
                                                     messageRepository.saveMessage(it)

@@ -8,12 +8,14 @@ import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.utils.Key
 import com.goterl.lazycode.lazysodium.utils.KeyPair
 import computer.lil.quilt.identity.IdentityHandler
+import okio.Buffer
+import okio.ByteString
 import java.nio.charset.StandardCharsets
-import java.util.*
+import okio.ByteString.Companion.decodeHex
 
 abstract class Handshake(
         val identityHandler: IdentityHandler,
-        val networkId: ByteArray = Key.fromHexString("d4a1cb88a66f02f8db635ce26441cc5dac1b08420ceaac230839b755845a9ffb").asBytes
+        val networkId: ByteString = "d4a1cb88a66f02f8db635ce26441cc5dac1b08420ceaac230839b755845a9ffb".decodeHex()
     ) {
     enum class State {
         PHASE1, PHASE2, PHASE3, PHASE4, ERROR
@@ -24,9 +26,9 @@ abstract class Handshake(
     protected val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
 
     var completed = false
-    var remoteKey: ByteArray? = null
+    var remoteKey: ByteString? = null
     val localEphemeralKeyPair: KeyPair = ls.cryptoKxKeypair()
-    var remoteEphemeralKey: ByteArray? = null
+    var remoteEphemeralKey: ByteString? = null
 
     protected var sharedSecretab: Key? = null
     protected var sharedSecretaB: Key? = null
@@ -34,10 +36,10 @@ abstract class Handshake(
 
     protected fun ByteArray.getLongSize(): Long { return this.size.toLong() }
 
-    private fun createHmac(key: ByteArray, message: ByteArray): ByteArray {
+    private fun createHmac(key: ByteString, message: ByteString): ByteString {
         val hmac = ByteArray(Auth.BYTES)
-        ls.cryptoAuth(hmac, message, message.getLongSize(), key)
-        return hmac
+        ls.cryptoAuth(hmac, message.toByteArray(), message.size.toLong(), key.toByteArray())
+        return ByteString.of(*hmac)
     }
 
     private fun hash256(message: ByteArray): ByteArray {
@@ -46,20 +48,21 @@ abstract class Handshake(
         return hash
     }
 
-    fun createHelloMessage(): ByteArray {
-        val hmacMessage = createHmac(networkId, localEphemeralKeyPair.publicKey.asBytes)
-        return byteArrayOf(*hmacMessage, *localEphemeralKeyPair.publicKey.asBytes)
+    fun createHelloMessage(): ByteString {
+        val localEphemeralKeyPairString = ByteString.of(*localEphemeralKeyPair.publicKey.asBytes)
+        val hmacMessage = createHmac(networkId, localEphemeralKeyPairString)
+        return ByteString.of(*hmacMessage.toByteArray(), *localEphemeralKeyPairString.toByteArray())
     }
 
-    fun verifyHelloMessage(data: ByteArray): Boolean {
+    fun verifyHelloMessage(data: ByteString): Boolean {
         if (data.size != 64)
             return false
 
-        val mac = data.sliceArray(0..31)
-        val remoteEphemeralKey = data.sliceArray(32..63)
+        val mac = data.substring(0, 32)
+        val remoteEphemeralKey = data.substring(32, 64)
         val expectedMac = createHmac(networkId, remoteEphemeralKey)
 
-        if (Arrays.equals(mac, expectedMac)) {
+        if (mac == expectedMac) {
             this.remoteEphemeralKey = remoteEphemeralKey
             computeSharedKeys()
             return true
@@ -69,33 +72,21 @@ abstract class Handshake(
 
     fun createBoxStream(): BoxStream {
         val localToRemoteKey =
-            hash256(
-                byteArrayOf(
-                    *hash256(
-                        hash256(
-                            byteArrayOf(*networkId, *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes, *sharedSecretAb!!.asBytes)
-                        )
-                    ),
-                    *remoteKey!!
-                )
-            )
+            ByteString.of(
+                *ByteString.of(*networkId.toByteArray(), *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes, *sharedSecretAb!!.asBytes).sha256().sha256().toByteArray(),
+                *remoteKey!!.toByteArray()
+            ).sha256()
 
         val remoteToLocalKey =
-            hash256(
-                byteArrayOf(
-                    *hash256(
-                        hash256(
-                            byteArrayOf(*networkId, *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes, *sharedSecretAb!!.asBytes)
-                        )
-                    ),
-                    *identityHandler.getIdentityPublicKey()
-                )
-            )
+            ByteString.of(
+                *ByteString.of(*networkId.toByteArray(), *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes, *sharedSecretAb!!.asBytes).sha256().sha256().toByteArray(),
+                *identityHandler.getIdentityPublicKey().toByteArray()
+            ).sha256()
 
-        val localToRemoteNonce = createHmac(networkId, remoteEphemeralKey!!).sliceArray(0 until SecretBox.NONCEBYTES)
-        val remoteToLocalNonce = createHmac(networkId, localEphemeralKeyPair.publicKey.asBytes).sliceArray(0 until SecretBox.NONCEBYTES)
+        val localToRemoteNonce = createHmac(networkId, remoteEphemeralKey!!).substring(0, SecretBox.NONCEBYTES)
+        val remoteToLocalNonce = createHmac(networkId, ByteString.of(*localEphemeralKeyPair.publicKey.asBytes)).substring(0, SecretBox.NONCEBYTES)
 
-        return BoxStream(localToRemoteKey, remoteToLocalKey, localToRemoteNonce, remoteToLocalNonce)
+        return BoxStream(localToRemoteKey, remoteToLocalKey, Buffer().write(localToRemoteNonce), Buffer().write(remoteToLocalNonce))
     }
 
     protected abstract fun computeSharedKeys()

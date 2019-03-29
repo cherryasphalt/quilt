@@ -23,8 +23,8 @@ import java.util.concurrent.Executors
 
 class PeerConnection(
     identityHandler: IdentityHandler,
-    networkId: ByteArray = "d4a1cb88a66f02f8db635ce26441cc5dac1b08420ceaac230839b755845a9ffb".decodeHex().toByteArray(),
-    remoteKey: ByteArray,
+    networkId: ByteString = "d4a1cb88a66f02f8db635ce26441cc5dac1b08420ceaac230839b755845a9ffb".decodeHex(),
+    remoteKey: ByteString,
     val moshi: Moshi) {
     private val clientHandshake = ClientHandshake(identityHandler, remoteKey, networkId)
     var socket: Socket? = null
@@ -106,13 +106,13 @@ class PeerConnection(
             flush()
             source?.run {
                 var byteCount = read(buffer, 8192L)
-                val serverHello = buffer.readByteArray(byteCount)
+                val serverHello = buffer.readByteString(byteCount)
                 if (byteCount != -1L && clientHandshake.verifyHelloMessage(serverHello))
                     write(clientHandshake.createAuthenticateMessage())
                     flush()
 
                     byteCount = read(buffer, 8192L)
-                    val acceptResponse = buffer.readByteArray(byteCount)
+                    val acceptResponse = buffer.readByteString(byteCount)
                     if (byteCount != -1L && clientHandshake.verifyServerAcceptResponse(acceptResponse)) {
                         boxStream = clientHandshake.createBoxStream()
                         return true
@@ -133,7 +133,7 @@ class PeerConnection(
                 )
             )
 
-            val payload = jsonAdapter.toJson(createHistoryStream).toByteArray()
+            val payload = ByteString.of(*jsonAdapter.toJson(createHistoryStream).toByteArray())
             val response = RPCMessage(
                 true,
                 false,
@@ -170,7 +170,8 @@ class PeerConnection(
                 val rpcBuffer = Buffer()
                 var rpcExpectedLength = 0
 
-                boxStream?.readFromServer(this)?.let { decoded ->
+                var decoded = boxStream?.readFromServer(this)
+                while (decoded != null) {
                     if (rpcBuffer.size == 0L)
                         rpcExpectedLength = RPCProtocol.getBodyLength(decoded) + RPCProtocol.HEADER_SIZE
 
@@ -178,15 +179,16 @@ class PeerConnection(
                     while (rpcExpectedLength != 0 && rpcBuffer.size >= (rpcExpectedLength.toLong())) {
                         emitter.onNext(
                             RPCProtocol.decode(
-                                rpcBuffer.readByteArray(rpcExpectedLength.toLong())
+                                rpcBuffer.readByteString(rpcExpectedLength.toLong())
                             )
                         )
                         rpcExpectedLength =
                             if (rpcBuffer.size >= RPCProtocol.HEADER_SIZE)
-                                RPCProtocol.getBodyLength(rpcBuffer.peek().readByteArray()) + RPCProtocol.HEADER_SIZE
+                                RPCProtocol.getBodyLength(rpcBuffer.peek().readByteString()) + RPCProtocol.HEADER_SIZE
                             else
                                 0
                     }
+                    decoded = boxStream?.readFromServer(this)
                 }
             }
         } catch (e: IOException) {

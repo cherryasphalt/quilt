@@ -13,6 +13,7 @@ import com.goterl.lazycode.lazysodium.interfaces.Sign
 import com.goterl.lazycode.lazysodium.utils.Key
 import computer.lil.quilt.BuildConfig
 import computer.lil.quilt.model.Identifier
+import okio.ByteString
 import java.lang.ref.WeakReference
 import java.math.BigInteger
 import java.nio.charset.Charset
@@ -110,16 +111,16 @@ class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
         return false
     }
 
-    override fun signUsingIdentity(message: String, charset: Charset): ByteArray {
-        return signUsingIdentity(message.toByteArray(charset))
+    override fun signUsingIdentity(message: String, charset: Charset): ByteString {
+        return signUsingIdentity(ByteString.of(*message.toByteArray(charset)))
     }
 
-    override fun signUsingIdentity(message: ByteArray): ByteArray {
+    override fun signUsingIdentity(message: ByteString): ByteString {
         val signature = ByteArray(Sign.BYTES)
         val signatureLength = LongArray(1)
-        ls.cryptoSignDetached(signature, signatureLength, message, message.size.toLong(), decryptPrivateKey())
+        ls.cryptoSignDetached(signature, signatureLength, message.toByteArray(), message.size.toLong(), decryptPrivateKey())
 
-        return signature.sliceArray(0 until signatureLength[0].toInt())
+        return ByteString.of(*signature.sliceArray(0 until signatureLength[0].toInt()))
     }
 
     override fun getIdentifier(): Identifier {
@@ -144,20 +145,20 @@ class AndroidKeyStoreIdentityHandler(context: Context): IdentityHandler {
         throw IdentityHandler.IdentityException("Identity not found.")
     }
 
-    override fun getIdentityPublicKey(): ByteArray {
+    override fun getIdentityPublicKey(): ByteString {
         contextRef.get()?.run {
             val pref = getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE)
             pref.getString(PREF_IDENTITY_PUBLIC_KEY, null)?.let {
-                return Base64.decode(it, Base64.NO_WRAP)
+                return ByteString.of(*Base64.decode(it, Base64.NO_WRAP))
             }
         }
         throw IdentityHandler.IdentityException("Identity not found.")
     }
 
-    override fun keyExchangeUsingIdentitySecret(exchangePublicKey: ByteArray): ByteArray {
+    override fun keyExchangeUsingIdentitySecret(exchangePublicKey: ByteString): ByteString {
         val curve25519ClientSecretKey = ByteArray(Sign.CURVE25519_SECRETKEYBYTES)
         ls.convertSecretKeyEd25519ToCurve25519(curve25519ClientSecretKey, decryptPrivateKey())
-        return ls.cryptoScalarMult(Key.fromBytes(curve25519ClientSecretKey), Key.fromBytes(exchangePublicKey)).asBytes
+        return ByteString.of(*ls.cryptoScalarMult(Key.fromBytes(curve25519ClientSecretKey), Key.fromBytes(exchangePublicKey.toByteArray())).asBytes)
     }
 
     private fun decryptPrivateKey(): ByteArray {

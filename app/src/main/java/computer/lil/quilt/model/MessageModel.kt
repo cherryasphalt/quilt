@@ -37,7 +37,7 @@ class MessageModel(
         val removedSignature = signatureRegex.replace(json, "")
 
         val newSig = identityHandler.signUsingIdentity(removedSignature)
-        val encodedSig = Base64.encodeToString(newSig, Base64.NO_WRAP)
+        val encodedSig = newSig.base64()
         signature = "$encodedSig.sig.ed25519"
     }
 

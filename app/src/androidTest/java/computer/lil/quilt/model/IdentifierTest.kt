@@ -13,7 +13,7 @@ class IdentifierTest {
         val identifier = Identifier.fromString(from)
         Assert.assertNotNull(identifier)
         identifier?.run {
-            Assert.assertEquals(algorithm, "ed25519")
+            Assert.assertEquals(algorithm.algo, "ed25519")
             Assert.assertEquals(keyHash, "EMovhfIrFk4NihAKnRNhrfRaqIhBv1Wj8pTxJNgvCCY=")
             Assert.assertEquals(type, Identifier.IdentityType.IDENTITY)
         }

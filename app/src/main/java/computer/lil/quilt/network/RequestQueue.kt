@@ -10,7 +10,7 @@ import computer.lil.quilt.model.RPCMessage
 import computer.lil.quilt.model.RPCRequest
 import computer.lil.quilt.protocol.ProtocolException
 import computer.lil.quilt.protocol.RPCProtocol
-import kotlin.reflect.jvm.internal.impl.protobuf.ByteString
+import okio.ByteString
 
 class RequestQueue(val moshi: Moshi) {
     private val queue = mutableListOf<Pair<Int, RPCRequest>>()
@@ -20,7 +20,7 @@ class RequestQueue(val moshi: Moshi) {
         if (checkValidRequest(request)) {
             val moshi = Moshi.Builder().add(RPCJsonAdapterFactory()).add(Identifier.IdentifierJsonAdapter()).build()
             val jsonAdapter = moshi.adapter(RPCRequest::class.java)
-            val bodyString = ByteString.copyFrom(request.body).toStringUtf8()
+            val bodyString = request.body.utf8()
             Log.d("request body string", bodyString)
 
             jsonAdapter.fromJson(bodyString)?.let {
@@ -76,7 +76,7 @@ class RequestQueue(val moshi: Moshi) {
     }
 
     private fun endStream(requestNumber: Int, connection: PeerConnection) {
-        val payload = "true".toByteArray()
+        val payload = ByteString.of(*"true".toByteArray())
         val response = RPCMessage(
             true,
             true,

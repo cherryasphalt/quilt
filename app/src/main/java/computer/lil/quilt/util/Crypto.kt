@@ -4,6 +4,7 @@ import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.interfaces.Hash
 import com.goterl.lazycode.lazysodium.interfaces.Sign
+import okio.ByteString
 import java.nio.charset.StandardCharsets
 
 class Crypto {
@@ -16,15 +17,15 @@ class Crypto {
             return hash
         }
 
-        fun derivePublicKey(privateKey: ByteArray): ByteArray {
+        fun derivePublicKey(privateKey: ByteString): ByteString {
             val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
 
             val seed = ByteArray(Sign.SEEDBYTES)
             val publicKey = ByteArray(Sign.PUBLICKEYBYTES)
             val newSecretKey = ByteArray(Sign.SECRETKEYBYTES)
-            ls.cryptoSignEd25519SkToSeed(seed, privateKey)
+            ls.cryptoSignEd25519SkToSeed(seed, privateKey.toByteArray())
             ls.cryptoBoxSeedKeypair(publicKey, newSecretKey, seed)
-            return publicKey
+            return ByteString.of(*publicKey)
         }
     }
 }

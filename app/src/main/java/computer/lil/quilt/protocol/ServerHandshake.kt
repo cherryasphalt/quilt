@@ -5,55 +5,53 @@ import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.interfaces.Sign
 import com.goterl.lazycode.lazysodium.utils.Key
 import computer.lil.quilt.identity.IdentityHandler
+import okio.ByteString
+import okio.ByteString.Companion.decodeHex
 
-class ServerHandshake(identityHandler: IdentityHandler, networkId: ByteArray = Key.fromHexString("d4a1cb88a66f02f8db635ce26441cc5dac1b08420ceaac230839b755845a9ffb").asBytes): Handshake(identityHandler, networkId) {
-    var detachedSignatureA: ByteArray? = null
+class ServerHandshake(identityHandler: IdentityHandler, networkId: ByteString = "d4a1cb88a66f02f8db635ce26441cc5dac1b08420ceaac230839b755845a9ffb".decodeHex()): Handshake(identityHandler, networkId) {
+    var detachedSignatureA: ByteString? = null
 
     override fun computeSharedKeys() {
-        sharedSecretab = ls.cryptoScalarMult(localEphemeralKeyPair.secretKey, Key.fromBytes(remoteEphemeralKey))
-        sharedSecretaB = Key.fromBytes(identityHandler.keyExchangeUsingIdentitySecret(remoteEphemeralKey!!))
+        sharedSecretab = ls.cryptoScalarMult(localEphemeralKeyPair.secretKey, Key.fromBytes(remoteEphemeralKey?.toByteArray()))
+        sharedSecretaB = Key.fromBytes(identityHandler.keyExchangeUsingIdentitySecret(remoteEphemeralKey!!).toByteArray())
     }
 
-    fun verifyClientAuthentication(data: ByteArray): Boolean {
+    fun verifyClientAuthentication(data: ByteString): Boolean {
         val dataPlainText = ByteArray(96)
         val zeroNonce = ByteArray(SecretBox.NONCEBYTES)
-        val preKey = byteArrayOf(*networkId, *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes)
-        val hashKey = ByteArray(Hash.SHA256_BYTES)
-        ls.cryptoHashSha256(hashKey, preKey, preKey.getLongSize())
-        ls.cryptoSecretBoxOpenEasy(dataPlainText, data, data.getLongSize(), zeroNonce, hashKey)
+        val hashKey = ByteString.of(*networkId.toByteArray(), *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes).sha256()
+        ls.cryptoSecretBoxOpenEasy(dataPlainText, data.toByteArray(), data.size.toLong(), zeroNonce, hashKey.toByteArray())
 
-        val detachedSignatureA = dataPlainText.sliceArray(0..63)
-        val clientLongTermPublicKey = dataPlainText.sliceArray(64..95)
-        val hashab = ByteArray(Hash.SHA256_BYTES)
-        ls.cryptoHashSha256(hashab, sharedSecretab?.asBytes, sharedSecretab?.asBytes!!.getLongSize())
-        val expectedMessage = byteArrayOf(*networkId, *identityHandler.getIdentityPublicKey(), *hashab)
-        if (ls.cryptoSignVerifyDetached(detachedSignatureA, expectedMessage, expectedMessage.getLongSize(), clientLongTermPublicKey)) {
+        val dataPlainTextString = ByteString.of(*dataPlainText)
+        val detachedSignatureA = dataPlainTextString.substring(0, 64)
+        val clientLongTermPublicKey = dataPlainTextString.substring(64, 96)
+        val hashab = ByteString.of(*sharedSecretab!!.asBytes).sha256()
+        val expectedMessage = ByteString.of(*networkId.toByteArray(), *identityHandler.getIdentityPublicKey().toByteArray(), *hashab.toByteArray())
+        if (ls.cryptoSignVerifyDetached(detachedSignatureA.toByteArray(), expectedMessage.toByteArray(), expectedMessage.size.toLong(), clientLongTermPublicKey.toByteArray())) {
             this.remoteKey = clientLongTermPublicKey
             this.detachedSignatureA = detachedSignatureA
 
             val curve25519ClientKey = ByteArray(Sign.CURVE25519_PUBLICKEYBYTES)
-            ls.convertPublicKeyEd25519ToCurve25519(curve25519ClientKey, remoteKey)
+            ls.convertPublicKeyEd25519ToCurve25519(curve25519ClientKey, remoteKey!!.toByteArray())
             this.sharedSecretAb = ls.cryptoScalarMult(localEphemeralKeyPair.secretKey, Key.fromBytes(curve25519ClientKey))
             return true
         }
         return false
     }
 
-    fun createAcceptMessage(): ByteArray {
+    fun createAcceptMessage(): ByteString {
         val hashab = ByteArray(Hash.SHA256_BYTES)
         ls.cryptoHashSha256(hashab, sharedSecretab?.asBytes, sharedSecretab?.asBytes!!.getLongSize())
-        val message = byteArrayOf(*networkId, *detachedSignatureA!!, *remoteKey!!, *hashab)
+        val message = ByteString.of(*networkId.toByteArray(), *detachedSignatureA!!.toByteArray(), *remoteKey!!.toByteArray(), *hashab)
         val detachedSignatureB = identityHandler.signUsingIdentity(message)
 
         val zeroNonce = ByteArray(SecretBox.NONCEBYTES)
-        val preKey = byteArrayOf(*networkId, *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes, *sharedSecretAb!!.asBytes)
-        val key = ByteArray(Hash.SHA256_BYTES)
-        ls.cryptoHashSha256(key, preKey, preKey.getLongSize())
+        val key = ByteString.of(*networkId.toByteArray(), *sharedSecretab!!.asBytes, *sharedSecretaB!!.asBytes, *sharedSecretAb!!.asBytes).sha256()
 
         val payload = ByteArray(SecretBox.MACBYTES + detachedSignatureB.size)
-        ls.cryptoSecretBoxEasy(payload, detachedSignatureB, detachedSignatureB.getLongSize(), zeroNonce, key)
+        ls.cryptoSecretBoxEasy(payload, detachedSignatureB.toByteArray(), detachedSignatureB.size.toLong(), zeroNonce, key.toByteArray())
 
         completed = true
-        return payload
+        return ByteString.of(*payload)
     }
 }

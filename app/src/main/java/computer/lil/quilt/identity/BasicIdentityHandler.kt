@@ -1,6 +1,5 @@
 package computer.lil.quilt.identity
 
-import android.util.Base64
 import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.exceptions.SodiumException
@@ -9,6 +8,7 @@ import com.goterl.lazycode.lazysodium.utils.Key
 import com.goterl.lazycode.lazysodium.utils.KeyPair
 import computer.lil.quilt.model.Identifier
 import computer.lil.quilt.util.Crypto
+import okio.ByteString
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
@@ -28,11 +28,11 @@ class BasicIdentityHandler(): IdentityHandler {
     private val ls = LazySodiumAndroid(SodiumAndroid(), StandardCharsets.UTF_8)
     private var keyPair: KeyPair? = null
 
-    constructor(publicKey: ByteArray, privateKey: ByteArray) : this() {
-        keyPair = KeyPair(Key.fromBytes(publicKey), Key.fromBytes(privateKey))
+    constructor(publicKey: ByteString, privateKey: ByteString) : this() {
+        keyPair = KeyPair(Key.fromBytes(publicKey.toByteArray()), Key.fromBytes(privateKey.toByteArray()))
     }
 
-    constructor(privateKey: ByteArray) : this(Crypto.derivePublicKey(privateKey), privateKey)
+    constructor(privateKey: ByteString) : this(Crypto.derivePublicKey(privateKey), privateKey)
 
     override fun generateIdentityKeyPair(): Boolean {
         if (keyPair != null)
@@ -45,34 +45,34 @@ class BasicIdentityHandler(): IdentityHandler {
         }
     }
 
-    override fun getIdentityPublicKey(): ByteArray {
-        keyPair?.publicKey?.asBytes?.let { return it }
+    override fun getIdentityPublicKey(): ByteString {
+        keyPair?.publicKey?.asBytes?.let { return ByteString.of(*it) }
         throw IdentityHandler.IdentityException("Identity not found.")
     }
 
     override fun getIdentifier(): Identifier {
-        return Identifier(Base64.encodeToString(getIdentityPublicKey(), Base64.NO_WRAP), Identifier.AlgoType.ED25519, Identifier.IdentityType.IDENTITY)
+        return Identifier(getIdentityPublicKey().base64(), Identifier.AlgoType.ED25519, Identifier.IdentityType.IDENTITY)
     }
 
     override fun getIdentityString(): String {
-        return "@${Base64.encodeToString(getIdentityPublicKey(), Base64.NO_WRAP)}.$KEY_ALGO"
+        return "@${getIdentityPublicKey().base64()}.$KEY_ALGO"
     }
 
-    override fun signUsingIdentity(message: ByteArray): ByteArray {
+    override fun signUsingIdentity(message: ByteString): ByteString {
         val signature = ByteArray(Sign.BYTES)
         val signatureLength = LongArray(1)
-        ls.cryptoSignDetached(signature, signatureLength, message, message.size.toLong(), keyPair?.secretKey?.asBytes)
+        ls.cryptoSignDetached(signature, signatureLength, message.toByteArray(), message.size.toLong(), keyPair?.secretKey?.asBytes)
 
-        return signature.sliceArray(0 until signatureLength[0].toInt())
+        return ByteString.of(*signature.sliceArray(0 until signatureLength[0].toInt()))
     }
 
-    override fun signUsingIdentity(message: String, charset: Charset): ByteArray {
-        return signUsingIdentity(message.toByteArray(charset))
+    override fun signUsingIdentity(message: String, charset: Charset): ByteString {
+        return signUsingIdentity(ByteString.of(*message.toByteArray(charset)))
     }
 
-    override fun keyExchangeUsingIdentitySecret(exchangePublicKey: ByteArray): ByteArray {
+    override fun keyExchangeUsingIdentitySecret(exchangePublicKey: ByteString): ByteString {
         val curve25519ClientSecretKey = ByteArray(Sign.CURVE25519_SECRETKEYBYTES)
         ls.convertSecretKeyEd25519ToCurve25519(curve25519ClientSecretKey, keyPair?.secretKey?.asBytes)
-        return ls.cryptoScalarMult(Key.fromBytes(curve25519ClientSecretKey), Key.fromBytes(exchangePublicKey)).asBytes
+        return ByteString.of(*ls.cryptoScalarMult(Key.fromBytes(curve25519ClientSecretKey), Key.fromBytes(exchangePublicKey.toByteArray())).asBytes)
     }
 }

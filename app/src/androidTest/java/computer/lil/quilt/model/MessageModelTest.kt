@@ -9,6 +9,7 @@ import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.*
+import okio.ByteString.Companion.decodeBase64
 
 @RunWith(AndroidJUnit4::class)
 class MessageModelTest {
@@ -78,8 +79,8 @@ class MessageModelTest {
         val adapter = moshi.adapter(MessageModel::class.java)
         val newMessage = adapter.fromJson(toParse)?.let { message ->
             val identityHandler = BasicIdentityHandler(
-                Base64.decode("zgThI3hlrpVWAISAdknwgz2l8KoT1v6V6v3bdZZ11jM=", Base64.DEFAULT),
-                Base64.decode("/P+IqmkRzG8N6OsvkhmkRGlzgg0yYWMnp6KqoNQ9qdjOBOEjeGWulVYAhIB2SfCDPaXwqhPW/pXq/dt1lnXWMw==", Base64.DEFAULT))
+                "zgThI3hlrpVWAISAdknwgz2l8KoT1v6V6v3bdZZ11jM=".decodeBase64()!!,
+                "/P+IqmkRzG8N6OsvkhmkRGlzgg0yYWMnp6KqoNQ9qdjOBOEjeGWulVYAhIB2SfCDPaXwqhPW/pXq/dt1lnXWMw==".decodeBase64()!!)
             MessageModel(
                 message.previous, message.sequence, message.author, message.timestamp, message.hash, message.content,
                 moshi, identityHandler)
