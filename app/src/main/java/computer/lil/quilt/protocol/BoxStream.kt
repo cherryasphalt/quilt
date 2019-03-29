@@ -3,6 +3,8 @@ package computer.lil.quilt.protocol
 import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
+import okio.*
+import java.lang.Exception
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.StandardCharsets
@@ -38,55 +40,72 @@ class BoxStream(
         return encryptMessage(message, serverToClientKey, serverToClientNonce)
     }
 
-    fun readFromClient(message: ByteArray): ByteArray {
-        return decryptMessage(message, clientToServerKey, clientToServerNonce)
+    fun readFromClient(source: BufferedSource): ByteArray {
+        return decryptMessage(source, clientToServerKey, clientToServerNonce)
     }
 
     fun sendToServer(message: ByteArray): ByteArray {
         return encryptMessage(message, clientToServerKey, clientToServerNonce)
     }
 
-    fun readFromServer(message: ByteArray): ByteArray {
-        return decryptMessage(message, serverToClientKey, serverToClientNonce)
+    fun readFromServer(source: BufferedSource): ByteArray {
+        return decryptMessage(source, serverToClientKey, serverToClientNonce)
     }
 
     fun createGoodbye(key: ByteArray, nonce: ByteArray): ByteArray {
         return encryptMessage(ByteArray(18), key, nonce)
     }
 
-    fun decryptMessage(encryptedMessage: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray {
-        if (encryptedMessage.size < HEADER_SIZE)
-            throw Exception()
-        val messages: MutableList<Byte> = mutableListOf()
-        var currentIndex = 0
+    fun decryptMessage(source: BufferedSource, key: ByteArray, nonce: ByteArray): ByteArray {
+        val messages = Buffer()
 
-        while (currentIndex < encryptedMessage.size) {
-            val decryptedMessage = decryptSingle(encryptedMessage.sliceArray(currentIndex until encryptedMessage.size), key, nonce)
-            currentIndex += (decryptedMessage.size + HEADER_SIZE)
-            messages.addAll(decryptedMessage.toList())
+        var decryptedMessage = decryptSingle(source, key, nonce)
+        while (decryptedMessage != null) {
+            messages.write(decryptedMessage)
+            decryptedMessage = decryptSingle(source, key, nonce)
         }
-
-        return messages.toByteArray()
+        return messages.readByteArray()
     }
 
-    private fun decryptSingle(encryptedSegment: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray {
+    private fun decryptSingle(source: BufferedSource, key: ByteArray, nonce: ByteArray): ByteArray? {
         val headerNonce = nonce.copyOf()
-        val bodyNonce = nonce.increment().copyOf()
-        nonce.increment()
+        val bodyNonce = nonce.copyOf().increment()
 
-        val encryptedHeader = encryptedSegment.sliceArray(0 until HEADER_SIZE)
-        val header = ByteArray(HEADER_SIZE - SecretBox.MACBYTES)
+        val peekSource = source.peek()
 
-        if (ls.cryptoSecretBoxOpenEasy(header, encryptedHeader, encryptedHeader.size.toLong(), headerNonce, key)) {
-            val messageLength = ByteBuffer.wrap(header.sliceArray(0 until 2)).order(ByteOrder.BIG_ENDIAN).short.toInt()
-            val bodyTag = header.sliceArray(2 until header.size)
+        val encryptedHeader = Buffer()
+        val bytesRead = peekSource.read(encryptedHeader, HEADER_SIZE.toLong())
+        if (bytesRead == HEADER_SIZE.toLong()) {
+            val header = ByteArray(HEADER_SIZE - SecretBox.MACBYTES)
 
-            val encryptedBody =
-                byteArrayOf(*bodyTag, *encryptedSegment.sliceArray(HEADER_SIZE until HEADER_SIZE + messageLength))
-            val decryptedBody = ByteArray(messageLength)
-            ls.cryptoSecretBoxOpenEasy(decryptedBody, encryptedBody, encryptedBody.size.toLong(), bodyNonce, key)
+            if (ls.cryptoSecretBoxOpenEasy(header, encryptedHeader.readByteArray(), bytesRead, headerNonce, key)) {
+                val messageLength =
+                    ByteBuffer.wrap(header.sliceArray(0 until 2)).order(ByteOrder.BIG_ENDIAN).short.toLong()
+                val bodyTag = header.sliceArray(2 until header.size)
 
-            return decryptedBody
+                val encryptedBody = Buffer()
+                if (peekSource.read(encryptedBody, messageLength) == messageLength) {
+                    val encryptedBodyWithHeader = byteArrayOf(*bodyTag, *encryptedBody.readByteArray())
+                    val decryptedBody = ByteArray(messageLength.toInt())
+                    ls.cryptoSecretBoxOpenEasy(
+                        decryptedBody,
+                        encryptedBodyWithHeader,
+                        encryptedBodyWithHeader.size.toLong(),
+                        bodyNonce,
+                        key
+                    )
+
+                    peekSource.close()
+                    source.skip(HEADER_SIZE + messageLength)
+                    nonce.increment()
+                    nonce.increment()
+                    return decryptedBody
+                } else {
+                    return null
+                }
+            }
+        } else if (bytesRead == -1L) {
+            return null
         }
         throw ProtocolException("Stream decryption error.")
     }

@@ -51,6 +51,8 @@ class MessageModel(
                 .withSubtype(Content.Pub::class.java, "pub")
                 .withSubtype(Content.Contact::class.java, "contact")
                 .withSubtype(Content.About::class.java, "about")
+                .withSubtype(Content.Channel::class.java, "channel")
+                .withSubtype(Content.Vote::class.java, "vote")
         ).build()
 
     fun createMessageId(): Identifier {

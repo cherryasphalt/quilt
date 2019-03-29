@@ -80,9 +80,8 @@ class MessageRepository(context: Context) {
                 when(networkMessage.content.type) {
                     "post" -> {
                         val postContent = networkMessage.content as computer.lil.quilt.model.Content.Post
-
                         postContent.mentions?.map {
-                            Mention(it.link, it.name, messageId)
+                            Mention(0, it.link, it.name, messageId)
                         }?.let {
                             mentionDao.insertAll(*it.toTypedArray())
                         }

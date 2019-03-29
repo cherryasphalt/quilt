@@ -82,7 +82,7 @@ class PeerConnection(
 
     private fun start(host: String, port: Int): Boolean {
         return try {
-            if (socket == null || !socket!!.isConnected || !clientHandshake.completed) {
+            //if (socket == null || !socket!!.isConnected || !clientHandshake.completed) {
                 Socket(host, port).run {
                     socket = this
                     source = source().buffer()
@@ -91,9 +91,9 @@ class PeerConnection(
                     requestQueue.clear()
                     performHandshake()
                 }
-            } else {
+            /*} else {
                 return true
-            }
+            }*/
         } catch (e: IOException) {
             false
         }
@@ -167,36 +167,26 @@ class PeerConnection(
     private fun readFromPeer(emitter: Emitter<RPCMessage>) {
         try {
             source?.run {
-                val buffer = Buffer()
                 val rpcBuffer = Buffer()
                 var rpcExpectedLength = 0
 
-                var byteCount = read(buffer, 8192L)
-                while (byteCount != -1L) {
-                    if (byteCount >= BoxStream.HEADER_SIZE) {
-                        val readBytes = buffer.readByteArray(byteCount)
-                        val decoded = boxStream?.readFromServer(readBytes)
+                boxStream?.readFromServer(this)?.let { decoded ->
+                    if (rpcBuffer.size == 0L)
+                        rpcExpectedLength = RPCProtocol.getBodyLength(decoded) + RPCProtocol.HEADER_SIZE
 
-                        if (rpcBuffer.size == 0L)
-                            rpcExpectedLength = RPCProtocol.getBodyLength(decoded!!) + RPCProtocol.HEADER_SIZE
-
-                        rpcBuffer.write(decoded!!)
-                        while (rpcExpectedLength != 0 && rpcBuffer.size >= (rpcExpectedLength.toLong())) {
-                            emitter.onNext(
-                                RPCProtocol.decode(
-                                    rpcBuffer.readByteArray(rpcExpectedLength.toLong())
-                                )
+                    rpcBuffer.write(decoded)
+                    while (rpcExpectedLength != 0 && rpcBuffer.size >= (rpcExpectedLength.toLong())) {
+                        emitter.onNext(
+                            RPCProtocol.decode(
+                                rpcBuffer.readByteArray(rpcExpectedLength.toLong())
                             )
-
-                            rpcExpectedLength =
-                                if (rpcBuffer.size >= RPCProtocol.HEADER_SIZE)
-                                    RPCProtocol.getBodyLength(rpcBuffer.peek().readByteArray()) + RPCProtocol.HEADER_SIZE
-                                else
-                                    0
-                        }
+                        )
+                        rpcExpectedLength =
+                            if (rpcBuffer.size >= RPCProtocol.HEADER_SIZE)
+                                RPCProtocol.getBodyLength(rpcBuffer.peek().readByteArray()) + RPCProtocol.HEADER_SIZE
+                            else
+                                0
                     }
-
-                    byteCount = read(buffer, 8192L)
                 }
             }
         } catch (e: IOException) {

@@ -16,8 +16,22 @@ open class Content(
     ): Content(type) {
         @JsonClass(generateAdapter = true)
         data class Mention(
+            val link: String,
+            val name: String?
+        )
+    }
+
+    @JsonClass(generateAdapter = true)
+    data class Vote(
+        override val type: String = "vote",
+        val channel: String?,
+        val vote: VoteInfo
+    ) : Content(type) {
+        @JsonClass(generateAdapter = true)
+        data class VoteInfo(
             val link: Identifier,
-            val name: String
+            val value: Int,
+            val expression: String
         )
     }
 
@@ -38,8 +52,8 @@ open class Content(
     data class About(
         @Transient override val type: String = "about",
         val about: Identifier,
-        val image: Identifier,
-        val name: String
+        val image: Identifier?,
+        val name: String?
     ) : Content(type)
 
     @JsonClass(generateAdapter = true)
