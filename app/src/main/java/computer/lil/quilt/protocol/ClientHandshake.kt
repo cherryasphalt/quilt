@@ -2,10 +2,10 @@ package computer.lil.quilt.protocol
 
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.interfaces.Sign
-import com.goterl.lazycode.lazysodium.utils.Key
 import computer.lil.quilt.identity.IdentityHandler
 import computer.lil.quilt.util.Crypto
 import computer.lil.quilt.util.Crypto.Companion.toByteString
+import computer.lil.quilt.util.Crypto.Companion.toKey
 import okio.ByteString
 import okio.ByteString.Companion.decodeHex
 
@@ -46,8 +46,8 @@ class ClientHandshake(identityHandler: IdentityHandler, serverKey: ByteString, n
         val curve25519ServerKey = ByteArray(Sign.CURVE25519_PUBLICKEYBYTES)
         ls.convertPublicKeyEd25519ToCurve25519(curve25519ServerKey, remoteKey!!.toByteArray())
 
-        sharedSecretab = ls.cryptoScalarMult(localEphemeralKeyPair.secretKey, Key.fromBytes(remoteEphemeralKey?.toByteArray()))
-        sharedSecretaB = ls.cryptoScalarMult(localEphemeralKeyPair.secretKey, Key.fromBytes(curve25519ServerKey))
-        sharedSecretAb = Key.fromBytes(identityHandler.keyExchangeUsingIdentitySecret(ByteString.of(*remoteEphemeralKey!!.toByteArray())).toByteArray())
+        sharedSecretab = ls.cryptoScalarMult(localEphemeralKeyPair.secretKey, remoteEphemeralKey?.toKey())
+        sharedSecretaB = ls.cryptoScalarMult(localEphemeralKeyPair.secretKey, curve25519ServerKey.toByteString().toKey())
+        sharedSecretAb = identityHandler.keyExchangeUsingIdentitySecret(ByteString.of(*remoteEphemeralKey!!.toByteArray())).toKey()
     }
 }

@@ -2,19 +2,19 @@ package computer.lil.quilt.protocol
 
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.interfaces.Sign
-import com.goterl.lazycode.lazysodium.utils.Key
 import computer.lil.quilt.identity.IdentityHandler
 import computer.lil.quilt.util.Crypto
 import computer.lil.quilt.util.Crypto.Companion.toByteString
+import computer.lil.quilt.util.Crypto.Companion.toKey
 import okio.ByteString
 import okio.ByteString.Companion.decodeHex
 
 class ServerHandshake(identityHandler: IdentityHandler, networkId: ByteString = "d4a1cb88a66f02f8db635ce26441cc5dac1b08420ceaac230839b755845a9ffb".decodeHex()): Handshake(identityHandler, networkId) {
-    var detachedSignatureA: ByteString? = null
+    private var detachedSignatureA: ByteString? = null
 
     override fun computeSharedKeys() {
-        sharedSecretab = ls.cryptoScalarMult(localEphemeralKeyPair.secretKey, Key.fromBytes(remoteEphemeralKey?.toByteArray()))
-        sharedSecretaB = Key.fromBytes(identityHandler.keyExchangeUsingIdentitySecret(remoteEphemeralKey!!).toByteArray())
+        sharedSecretab = ls.cryptoScalarMult(localEphemeralKeyPair.secretKey, remoteEphemeralKey?.toKey())
+        sharedSecretaB = identityHandler.keyExchangeUsingIdentitySecret(remoteEphemeralKey!!).toKey()
     }
 
     fun verifyClientAuthentication(data: ByteString): Boolean {
@@ -26,13 +26,14 @@ class ServerHandshake(identityHandler: IdentityHandler, networkId: ByteString = 
         val clientLongTermPublicKey = dataPlainText?.substring(64, 96)
         val hashab = sharedSecretab!!.asBytes.toByteString().sha256()
         val expectedMessage = ByteString.of(*networkId.toByteArray(), *identityHandler.getIdentityPublicKey().toByteArray(), *hashab.toByteArray())
-        if (ls.cryptoSignVerifyDetached(detachedSignatureA?.toByteArray(), expectedMessage.toByteArray(), expectedMessage.size.toLong(), clientLongTermPublicKey?.toByteArray())) {
+
+        if (Crypto.verifySignDetached(detachedSignatureA!!, expectedMessage, clientLongTermPublicKey!!)) {
             this.remoteKey = clientLongTermPublicKey
             this.detachedSignatureA = detachedSignatureA
 
             val curve25519ClientKey = ByteArray(Sign.CURVE25519_PUBLICKEYBYTES)
             ls.convertPublicKeyEd25519ToCurve25519(curve25519ClientKey, remoteKey!!.toByteArray())
-            this.sharedSecretAb = ls.cryptoScalarMult(localEphemeralKeyPair.secretKey, Key.fromBytes(curve25519ClientKey))
+            this.sharedSecretAb = ls.cryptoScalarMult(localEphemeralKeyPair.secretKey, curve25519ClientKey.toByteString().toKey())
             return true
         }
         return false

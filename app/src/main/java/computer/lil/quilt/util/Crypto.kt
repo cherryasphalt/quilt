@@ -5,6 +5,7 @@ import com.goterl.lazycode.lazysodium.SodiumAndroid
 import com.goterl.lazycode.lazysodium.interfaces.Auth
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.interfaces.Sign
+import com.goterl.lazycode.lazysodium.utils.Key
 import okio.Buffer
 import okio.ByteString
 import java.nio.charset.StandardCharsets
@@ -47,6 +48,10 @@ class Crypto {
 
         fun ByteArray.toByteString(): ByteString {
             return ByteString.of(*this)
+        }
+
+        fun ByteString.toKey(): Key {
+            return Key.fromBytes(this.toByteArray())
         }
 
         fun secretBoxSeal(message: ByteString, key: ByteString, nonce: ByteString): ByteString {
