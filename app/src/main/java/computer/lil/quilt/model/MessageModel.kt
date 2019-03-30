@@ -4,6 +4,7 @@ import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import computer.lil.quilt.identity.IdentityHandler
+import computer.lil.quilt.protocol.Constants
 import computer.lil.quilt.protocol.Crypto.Companion.toByteString
 import java.util.*
 
@@ -37,19 +38,7 @@ class MessageModel(
         signature = "$encodedSig.sig.ed25519"
     }
 
-    val moshi = Moshi.Builder()
-        .add(Identifier.IdentifierJsonAdapter())
-        .add(Adapters.DataTypeAdapter())
-        .add(RPCJsonAdapterFactory())
-        .add(
-            PolymorphicJsonAdapterFactory.of(Content::class.java, "type")
-                .withSubtype(Content.Post::class.java, "post")
-                .withSubtype(Content.Pub::class.java, "pub")
-                .withSubtype(Content.Contact::class.java, "contact")
-                .withSubtype(Content.About::class.java, "about")
-                .withSubtype(Content.Channel::class.java, "channel")
-                .withSubtype(Content.Vote::class.java, "vote")
-        ).build()
+    val moshi = Constants.getMoshiInstance()
 
     fun createMessageId(): Identifier {
         val encodedId = moshi.adapter(MessageModel::class.java)

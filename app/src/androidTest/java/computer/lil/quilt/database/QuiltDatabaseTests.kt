@@ -12,6 +12,7 @@ import computer.lil.quilt.model.Adapters
 import computer.lil.quilt.model.Content
 import computer.lil.quilt.model.Identifier
 import computer.lil.quilt.model.MessageModel
+import computer.lil.quilt.protocol.Constants
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -25,15 +26,7 @@ class QuiltDatabaseTests {
     private lateinit var mentionDao: MentionDao
     private lateinit var db: QuiltDatabase
 
-    val moshi = Moshi.Builder()
-        .add(Identifier.IdentifierJsonAdapter())
-        .add(Adapters.DataTypeAdapter())
-        .add(
-            PolymorphicJsonAdapterFactory.of(Content::class.java, "type")
-                .withSubtype(Content.Post::class.java, "post")
-                .withSubtype(Content.Pub::class.java, "pub")
-                .withSubtype(Content.Contact::class.java, "contact")
-        ).build()
+    val moshi = Constants.getMoshiInstance()
 
     @Before
     fun createDb() {

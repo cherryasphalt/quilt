@@ -10,20 +10,22 @@ import computer.lil.quilt.data.repo.PeerRepository
 import computer.lil.quilt.database.Peer
 import computer.lil.quilt.identity.IdentityHandler
 import computer.lil.quilt.model.ExtendedMessage
+import computer.lil.quilt.protocol.Constants
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import okio.ByteString.Companion.decodeHex
 
-class SyncManager(context: Context, val identityHandler: IdentityHandler, val moshi: Moshi) {
+class SyncManager(context: Context, val identityHandler: IdentityHandler) {
     var clientSubs = CompositeDisposable()
     val messageRepository = MessageRepository(context)
     val peerRepository = PeerRepository(context)
+    val moshi = Constants.getMoshiInstance()
+
     private val connection = PeerConnection(
         identityHandler,
-        remoteKey = "676acdbbda229c2f4bcd83dc69a3a31042c4ee92266d09cabb699b0b3066b0de".decodeHex(),
-        moshi = moshi
+        remoteKey = "676acdbbda229c2f4bcd83dc69a3a31042c4ee92266d09cabb699b0b3066b0de".decodeHex()
     )
 
     fun startSync(lifecycleOwner: LifecycleOwner, context: Context) {
@@ -38,7 +40,7 @@ class SyncManager(context: Context, val identityHandler: IdentityHandler, val mo
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe {
                         Log.d("success", it.toString())
-                        val requestQueue = RequestQueue(moshi)
+                        val requestQueue = RequestQueue()
                         if (it) {
                             clientSubs.add(
                                 connection.listenToPeer(peerList)

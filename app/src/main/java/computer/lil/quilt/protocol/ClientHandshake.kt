@@ -3,12 +3,16 @@ package computer.lil.quilt.protocol
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.interfaces.Sign
 import computer.lil.quilt.identity.IdentityHandler
+import computer.lil.quilt.protocol.Constants.Companion.SSB_NETWORK_ID
 import computer.lil.quilt.protocol.Crypto.Companion.toByteString
 import computer.lil.quilt.protocol.Crypto.Companion.toKey
 import okio.ByteString
-import okio.ByteString.Companion.decodeHex
 
-class ClientHandshake(identityHandler: IdentityHandler, serverKey: ByteString, networkId: ByteString = "d4a1cb88a66f02f8db635ce26441cc5dac1b08420ceaac230839b755845a9ffb".decodeHex()): Handshake(identityHandler, networkId) {
+class ClientHandshake(
+    identityHandler: IdentityHandler,
+    networkId: ByteString = SSB_NETWORK_ID,
+    serverKey: ByteString
+) : Handshake(identityHandler, networkId) {
     init {
         remoteKey = serverKey
     }

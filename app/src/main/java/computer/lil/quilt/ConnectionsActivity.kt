@@ -19,7 +19,7 @@ class ConnectionsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         DaggerDataComponent.builder().dataModule(DataModule(this)).build().inject(this)
         setContentView(R.layout.activity_connections)
-        syncManager = SyncManager(this, identityHandler, moshi)
+        syncManager = SyncManager(this, identityHandler)
         btn_retry.setOnClickListener {
             syncManager.startSync(this, this)
         }

@@ -6,16 +6,16 @@ import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.utils.Key
 import com.goterl.lazycode.lazysodium.utils.KeyPair
 import computer.lil.quilt.identity.IdentityHandler
+import computer.lil.quilt.protocol.Constants.Companion.SSB_NETWORK_ID
 import computer.lil.quilt.protocol.Crypto.Companion.createHmac
 import computer.lil.quilt.protocol.Crypto.Companion.toByteString
 import okio.Buffer
 import okio.ByteString
-import okio.ByteString.Companion.decodeHex
 import java.nio.charset.StandardCharsets
 
 abstract class Handshake(
         val identityHandler: IdentityHandler,
-        val networkId: ByteString = "d4a1cb88a66f02f8db635ce26441cc5dac1b08420ceaac230839b755845a9ffb".decodeHex()
+        val networkId: ByteString = SSB_NETWORK_ID
     ) {
     enum class State {
         PHASE1, PHASE2, PHASE3, PHASE4, ERROR

@@ -2,23 +2,21 @@ package computer.lil.quilt.network
 
 import android.content.Context
 import android.util.Log
-import com.squareup.moshi.Moshi
 import computer.lil.quilt.data.repo.MessageRepository
-import computer.lil.quilt.model.Identifier
-import computer.lil.quilt.model.RPCJsonAdapterFactory
 import computer.lil.quilt.model.RPCMessage
 import computer.lil.quilt.model.RPCRequest
+import computer.lil.quilt.protocol.Constants
+import computer.lil.quilt.protocol.Crypto.Companion.toByteString
 import computer.lil.quilt.protocol.ProtocolException
 import computer.lil.quilt.protocol.RPCProtocol
-import computer.lil.quilt.protocol.Crypto.Companion.toByteString
 
-class RequestQueue(val moshi: Moshi) {
+class RequestQueue() {
     private val queue = mutableListOf<Pair<Int, RPCRequest>>()
     private val requestNumberSet = mutableSetOf<Int>()
 
     fun add(request: RPCMessage) {
         if (checkValidRequest(request)) {
-            val moshi = Moshi.Builder().add(RPCJsonAdapterFactory()).add(Identifier.IdentifierJsonAdapter()).build()
+            val moshi = Constants.getMoshiInstance()
             val jsonAdapter = moshi.adapter(RPCRequest::class.java)
             val bodyString = request.body.utf8()
             Log.d("request body string", bodyString)

@@ -16,6 +16,7 @@ import computer.lil.quilt.model.Adapters
 import computer.lil.quilt.model.Content
 import computer.lil.quilt.model.Identifier
 import computer.lil.quilt.model.MessageModel
+import computer.lil.quilt.protocol.Constants
 import computer.lil.quilt.util.SingletonHolder
 
 @Database(entities = [Message::class, Peer::class, Pub::class, Blob::class, Mention::class], version = 1)
@@ -54,19 +55,6 @@ abstract class QuiltDatabase: RoomDatabase() {
         }
 
         fun insertPeers() {
-            val moshi = Moshi.Builder()
-                .add(Identifier.IdentifierJsonAdapter())
-                .add(Adapters.DataTypeAdapter())
-                .add(
-                    PolymorphicJsonAdapterFactory.of(Content::class.java, "type")
-                        .withSubtype(Content.Post::class.java, "post")
-                        .withSubtype(Content.Pub::class.java, "pub")
-                        .withSubtype(Content.Contact::class.java, "contact")
-                        .withSubtype(Content.About::class.java, "about")
-                        .withSubtype(Content.Channel::class.java, "channel")
-                        .withSubtype(Content.Vote::class.java, "vote")
-                ).build()
-
             val peerList = listOf(
                 "@Z2rNu9oinC9LzYPcaaOjEELE7pImbQnKu2mbCzBmsN4=.ed25519",
                 "@EMovhfIrFk4NihAKnRNhrfRaqIhBv1Wj8pTxJNgvCCY=.ed25519")
@@ -80,16 +68,7 @@ abstract class QuiltDatabase: RoomDatabase() {
         }
 
         fun insertMessages() {
-            val moshi = Moshi.Builder()
-                .add(Identifier.IdentifierJsonAdapter())
-                .add(Adapters.DataTypeAdapter())
-                .add(
-                    PolymorphicJsonAdapterFactory.of(Content::class.java, "type")
-                        .withSubtype(Content.Post::class.java, "post")
-                        .withSubtype(Content.Pub::class.java, "pub")
-                        .withSubtype(Content.Contact::class.java, "contact")
-                        .withSubtype(Content.About::class.java, "about")
-                ).build()
+            val moshi = Constants.getMoshiInstance()
 
             val toParse = "{\n" +
                     "    \"previous\": \"%O3I3w1pUZqCh1/DxoO/fGYdpn2nYnth+OqXHwdOodUg=.sha256\",\n" +
