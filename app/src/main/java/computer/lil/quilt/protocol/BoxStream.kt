@@ -1,11 +1,10 @@
 package computer.lil.quilt.protocol
 
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
-import computer.lil.quilt.util.Crypto
-import computer.lil.quilt.util.Crypto.Companion.increment
-import computer.lil.quilt.util.Crypto.Companion.secretBoxOpen
-import computer.lil.quilt.util.Crypto.Companion.secretBoxSeal
-import computer.lil.quilt.util.Crypto.Companion.toByteString
+import computer.lil.quilt.protocol.Crypto.Companion.increment
+import computer.lil.quilt.protocol.Crypto.Companion.secretBoxOpen
+import computer.lil.quilt.protocol.Crypto.Companion.secretBoxSeal
+import computer.lil.quilt.protocol.Crypto.Companion.toByteString
 import okio.Buffer
 import okio.BufferedSource
 import okio.ByteString

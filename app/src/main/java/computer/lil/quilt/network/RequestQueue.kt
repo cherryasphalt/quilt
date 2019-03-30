@@ -10,7 +10,7 @@ import computer.lil.quilt.model.RPCMessage
 import computer.lil.quilt.model.RPCRequest
 import computer.lil.quilt.protocol.ProtocolException
 import computer.lil.quilt.protocol.RPCProtocol
-import computer.lil.quilt.util.Crypto.Companion.toByteString
+import computer.lil.quilt.protocol.Crypto.Companion.toByteString
 
 class RequestQueue(val moshi: Moshi) {
     private val queue = mutableListOf<Pair<Int, RPCRequest>>()

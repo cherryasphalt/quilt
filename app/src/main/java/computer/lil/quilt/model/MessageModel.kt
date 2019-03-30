@@ -4,7 +4,7 @@ import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import computer.lil.quilt.identity.IdentityHandler
-import computer.lil.quilt.util.Crypto.Companion.toByteString
+import computer.lil.quilt.protocol.Crypto.Companion.toByteString
 import java.util.*
 
 @JsonClass(generateAdapter = true)

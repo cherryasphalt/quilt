@@ -7,7 +7,7 @@ import com.goterl.lazycode.lazysodium.interfaces.Sign
 import com.goterl.lazycode.lazysodium.utils.Key
 import com.goterl.lazycode.lazysodium.utils.KeyPair
 import computer.lil.quilt.model.Identifier
-import computer.lil.quilt.util.Crypto
+import computer.lil.quilt.protocol.Crypto
 import okio.ByteString
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets

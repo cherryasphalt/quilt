@@ -7,7 +7,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.experimental.and
 import kotlin.experimental.or
-import computer.lil.quilt.util.Crypto.Companion.toByteString
+import computer.lil.quilt.protocol.Crypto.Companion.toByteString
 
 class RPCProtocol {
     companion object {

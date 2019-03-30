@@ -1,4 +1,4 @@
-package computer.lil.quilt.util
+package computer.lil.quilt.protocol
 
 import com.goterl.lazycode.lazysodium.LazySodiumAndroid
 import com.goterl.lazycode.lazysodium.SodiumAndroid

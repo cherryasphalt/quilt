@@ -3,9 +3,8 @@ package computer.lil.quilt.protocol
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.interfaces.Sign
 import computer.lil.quilt.identity.IdentityHandler
-import computer.lil.quilt.util.Crypto
-import computer.lil.quilt.util.Crypto.Companion.toByteString
-import computer.lil.quilt.util.Crypto.Companion.toKey
+import computer.lil.quilt.protocol.Crypto.Companion.toByteString
+import computer.lil.quilt.protocol.Crypto.Companion.toKey
 import okio.ByteString
 import okio.ByteString.Companion.decodeHex
 

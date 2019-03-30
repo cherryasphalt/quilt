@@ -6,8 +6,8 @@ import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.utils.Key
 import com.goterl.lazycode.lazysodium.utils.KeyPair
 import computer.lil.quilt.identity.IdentityHandler
-import computer.lil.quilt.util.Crypto.Companion.createHmac
-import computer.lil.quilt.util.Crypto.Companion.toByteString
+import computer.lil.quilt.protocol.Crypto.Companion.createHmac
+import computer.lil.quilt.protocol.Crypto.Companion.toByteString
 import okio.Buffer
 import okio.ByteString
 import okio.ByteString.Companion.decodeHex
