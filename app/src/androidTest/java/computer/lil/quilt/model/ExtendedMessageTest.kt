@@ -1,8 +1,7 @@
 package computer.lil.quilt.model
 
 import androidx.test.runner.AndroidJUnit4
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
+import computer.lil.quilt.api.Constants
 import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,15 +28,7 @@ class ExtendedMessageTest {
                 "  \"timestamp\": 1553032880240\n" +
                 "}"
 
-        val moshi = Moshi.Builder()
-            .add(Identifier.IdentifierJsonAdapter())
-            .add(Adapters.DataTypeAdapter())
-            .add(
-                PolymorphicJsonAdapterFactory.of(Content::class.java, "type")
-                    .withSubtype(Content.Post::class.java, "post")
-                    .withSubtype(Content.Pub::class.java, "pub")
-                    .withSubtype(Content.Contact::class.java, "contact")
-            ).build()
+        val moshi = Constants.getMoshiInstance()
 
         val extendedMessage = moshi.adapter(ExtendedMessage::class.java).fromJson(toParse)
         Assert.assertEquals(extendedMessage?.key, Identifier.fromString("%YkBqF4ACVQZbk5d3IpuYrtzHbQK5+x6k6fhgAc+c9Dw=.sha256"))

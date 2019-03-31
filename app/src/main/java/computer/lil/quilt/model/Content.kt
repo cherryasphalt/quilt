@@ -71,6 +71,11 @@ open class Content(
     ) : Content(type)
 
     @JsonClass(generateAdapter = true)
+    data class Unknown(
+        override val type: String
+    ) : Content(type)
+
+    @JsonClass(generateAdapter = true)
     data class PrivateMessage(
         val box: String
     ) : Content(null)

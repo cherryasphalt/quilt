@@ -4,15 +4,10 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.runner.AndroidJUnit4
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import computer.lil.quilt.data.repo.MessageRepository
 import computer.lil.quilt.database.content.post.MentionDao
-import computer.lil.quilt.model.Adapters
-import computer.lil.quilt.model.Content
-import computer.lil.quilt.model.Identifier
 import computer.lil.quilt.model.MessageModel
-import computer.lil.quilt.protocol.Constants
+import computer.lil.quilt.api.Constants
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before

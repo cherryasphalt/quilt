@@ -7,16 +7,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import android.os.AsyncTask
 import androidx.room.Room
 import androidx.room.TypeConverters
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import computer.lil.quilt.data.repo.MessageRepository
 import computer.lil.quilt.database.content.post.Mention
 import computer.lil.quilt.database.content.post.MentionDao
-import computer.lil.quilt.model.Adapters
-import computer.lil.quilt.model.Content
 import computer.lil.quilt.model.Identifier
 import computer.lil.quilt.model.MessageModel
-import computer.lil.quilt.protocol.Constants
+import computer.lil.quilt.api.Constants
 import computer.lil.quilt.util.SingletonHolder
 
 @Database(entities = [Message::class, Peer::class, Pub::class, Blob::class, Mention::class], version = 1)

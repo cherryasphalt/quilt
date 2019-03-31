@@ -1,4 +1,4 @@
-package computer.lil.quilt.protocol
+package computer.lil.quilt.api
 
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
@@ -12,6 +12,9 @@ class Constants {
     companion object {
         @JvmField
         val SSB_NETWORK_ID = "d4a1cb88a66f02f8db635ce26441cc5dac1b08420ceaac230839b755845a9ffb".decodeHex()
+
+        @JvmField
+        val DEFAULT_SOCIAL_CONTENT_TYPES: Set<Class<Content>> = setOf()
 
         @JvmStatic
         fun getMoshiInstance(): Moshi =

@@ -2,9 +2,8 @@ package computer.lil.quilt.model
 
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import computer.lil.quilt.identity.IdentityHandler
-import computer.lil.quilt.protocol.Constants
+import computer.lil.quilt.api.Constants
 import computer.lil.quilt.protocol.Crypto.Companion.toByteString
 import java.util.*
 

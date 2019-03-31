@@ -6,7 +6,7 @@ import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.utils.Key
 import com.goterl.lazycode.lazysodium.utils.KeyPair
 import computer.lil.quilt.identity.IdentityHandler
-import computer.lil.quilt.protocol.Constants.Companion.SSB_NETWORK_ID
+import computer.lil.quilt.api.Constants.Companion.SSB_NETWORK_ID
 import computer.lil.quilt.protocol.Crypto.Companion.createHmac
 import computer.lil.quilt.protocol.Crypto.Companion.toByteString
 import okio.Buffer

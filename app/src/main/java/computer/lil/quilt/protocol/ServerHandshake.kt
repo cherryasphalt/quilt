@@ -3,7 +3,7 @@ package computer.lil.quilt.protocol
 import com.goterl.lazycode.lazysodium.interfaces.SecretBox
 import com.goterl.lazycode.lazysodium.interfaces.Sign
 import computer.lil.quilt.identity.IdentityHandler
-import computer.lil.quilt.protocol.Constants.Companion.SSB_NETWORK_ID
+import computer.lil.quilt.api.Constants.Companion.SSB_NETWORK_ID
 import computer.lil.quilt.protocol.Crypto.Companion.toByteString
 import computer.lil.quilt.protocol.Crypto.Companion.toKey
 import okio.ByteString

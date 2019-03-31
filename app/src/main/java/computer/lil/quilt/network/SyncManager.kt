@@ -4,13 +4,12 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
-import com.squareup.moshi.Moshi
 import computer.lil.quilt.data.repo.MessageRepository
 import computer.lil.quilt.data.repo.PeerRepository
 import computer.lil.quilt.database.Peer
 import computer.lil.quilt.identity.IdentityHandler
 import computer.lil.quilt.model.ExtendedMessage
-import computer.lil.quilt.protocol.Constants
+import computer.lil.quilt.api.Constants
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.subscribeBy

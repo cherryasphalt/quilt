@@ -8,7 +8,7 @@ import computer.lil.quilt.model.RPCMessage
 import computer.lil.quilt.model.RPCRequest
 import computer.lil.quilt.protocol.BoxStream
 import computer.lil.quilt.protocol.ClientHandshake
-import computer.lil.quilt.protocol.Constants
+import computer.lil.quilt.api.Constants
 import computer.lil.quilt.protocol.RPCProtocol
 import io.reactivex.Emitter
 import io.reactivex.Observable
@@ -24,7 +24,8 @@ import java.util.concurrent.Executors
 class PeerConnection(
     identityHandler: IdentityHandler,
     networkId: ByteString = "d4a1cb88a66f02f8db635ce26441cc5dac1b08420ceaac230839b755845a9ffb".decodeHex(),
-    remoteKey: ByteString) {
+    remoteKey: ByteString
+) {
     private val clientHandshake = ClientHandshake(identityHandler, networkId, remoteKey)
     var socket: Socket? = null
     var source: BufferedSource? = null
@@ -77,7 +78,6 @@ class PeerConnection(
 
         return Observable.create(handler)
     }
-
 
     private fun start(host: String, port: Int): Boolean {
         return try {
@@ -206,4 +206,9 @@ class PeerConnection(
         } catch (ignored: IOException) { }
     }
 
+    fun close() {
+        socket?.run {
+            closeQuietly(this)
+        }
+    }
 }

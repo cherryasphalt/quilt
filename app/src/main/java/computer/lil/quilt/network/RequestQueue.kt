@@ -5,7 +5,7 @@ import android.util.Log
 import computer.lil.quilt.data.repo.MessageRepository
 import computer.lil.quilt.model.RPCMessage
 import computer.lil.quilt.model.RPCRequest
-import computer.lil.quilt.protocol.Constants
+import computer.lil.quilt.api.Constants
 import computer.lil.quilt.protocol.Crypto.Companion.toByteString
 import computer.lil.quilt.protocol.ProtocolException
 import computer.lil.quilt.protocol.RPCProtocol

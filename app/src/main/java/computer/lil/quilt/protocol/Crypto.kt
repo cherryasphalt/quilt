@@ -9,6 +9,7 @@ import com.goterl.lazycode.lazysodium.utils.Key
 import okio.Buffer
 import okio.ByteString
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.ThreadFactory
 
 class Crypto {
     companion object {
@@ -89,6 +90,19 @@ class Crypto {
             val hmac = ByteArray(Auth.BYTES)
             ls.cryptoAuth(hmac, message.toByteArray(), message.size.toLong(), key.toByteArray())
             return hmac.toByteString()
+        }
+    }
+}
+
+class Util {
+    companion object {
+        @JvmStatic
+        fun threadFactory(name: String, daemon: Boolean): ThreadFactory {
+            return ThreadFactory { runnable ->
+                val result = Thread(runnable, name)
+                result.isDaemon = daemon
+                result
+            }
         }
     }
 }
